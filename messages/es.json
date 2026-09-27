@@ -91,7 +91,8 @@
     "postponed": "Aplazado",
     "matchesCount": "{count, plural, =1 {# partido} other {# partidos}}",
     "aiCaution": "IA: cautela",
-    "aiDisagree": "IA: discrepa"
+    "aiDisagree": "IA: discrepa",
+    "smallSample": "Muestra pequeña"
   },
   "partido": {
     "title": "Ficha de partido",
@@ -132,7 +133,8 @@
     "aiVerdictLabel": "Veredicto",
     "aiRisks": "Riesgos detectados",
     "aiSelloNote": "Sello del modelo {modelo} → sello final {final}",
-    "aiDisclaimer": "La IA audita el pick del modelo con forma, bajas y cuotas. Solo puede bajar el sello, nunca subirlo. No es una predicción."
+    "aiDisclaimer": "La IA audita el pick del modelo con forma, bajas y cuotas. Solo puede bajar el sello, nunca subirlo. No es una predicción.",
+    "smallSample": "Muestra pequeña: uno de los equipos tiene menos de 5 partidos con datos. La probabilidad se mezcla con la cuota del mercado hasta completar la muestra."
   },
   "markets": {
     "1x2": "Resultado (1X2)",
@@ -308,7 +310,12 @@
     "actions": "Acciones",
     "noUsers": "No hay usuarios que coincidan.",
     "updated": "Actualizado",
-    "role": "Rol"
+    "role": "Rol",
+    "setScore": "Cargar marcador a mano",
+    "fixtureId": "ID del partido",
+    "homeGoals": "Goles local",
+    "awayGoals": "Goles visita",
+    "scoreSaved": "Marcador guardado y picks cerrados."
   },
   "auth": {
     "loginTitle": "Entra a tu sala de análisis",
@@ -344,7 +351,7 @@
     "dataTitle": "Datos y privacidad",
     "data": "Guardamos tu correo, idioma y fechas de tu cuenta para operar el servicio. No vendemos tus datos. Puedes solicitar la eliminación de tu cuenta escribiéndonos por WhatsApp.",
     "sourcesTitle": "Fuentes",
-    "sources": "Estadísticas de API-Football y cuotas informativas de The Odds API. Ventaja no tiene vínculo comercial con ninguna casa de apuestas ni incluye enlaces de afiliado.",
+    "sources": "Calendario, cuotas informativas y resultados de The Odds API; temporada completa de la Premier League de football-data.org; opcionalmente estadísticas de API-Football. Ventaja no tiene vínculo comercial con ninguna casa de apuestas ni incluye enlaces de afiliado.",
     "subscriptionTitle": "Suscripción",
     "subscription": "El acceso se activa manualmente tras el pago acordado por WhatsApp. La suscripción cubre el uso de la herramienta de análisis y puede cancelarse en cualquier momento."
   },

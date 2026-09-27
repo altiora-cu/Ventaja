@@ -5,11 +5,15 @@
  * Uso: pnpm ingest:check            (lee .env.local)
  *      pnpm ingest:check --skip-run  (solo reporte, sin llamar a las APIs)
  *
- * Requiere NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, API_FOOTBALL_KEY, ODDS_API_KEY.
+ * Requiere NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, ODDS_API_KEY. Opcionales: FOOTBALL_DATA_KEY
+ * (Premier completa), API_FOOTBALL_KEY con DATA_SOURCE=api_football, ANTHROPIC_API_KEY (Lecturas y Revisión IA).
  */
-import 'dotenv/config';
+import { config as loadEnv } from 'dotenv';
 
-const REQUIRED = ['NEXT_PUBLIC_SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY', 'API_FOOTBALL_KEY', 'ODDS_API_KEY'] as const;
+// Carga .env.local (prioridad) y .env, desde la raíz del proyecto.
+loadEnv({ path: ['.env.local', '.env'] });
+
+const REQUIRED = ['NEXT_PUBLIC_SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY', 'ODDS_API_KEY'] as const;
 
 function section(title: string) {
   console.log(`\n== ${title} ==`);
@@ -27,8 +31,11 @@ async function main() {
   const admin = createAdminClient();
 
   // 0. Conexión y esquema
+  section('Fuente de datos');
+  console.log(process.env.DATA_SOURCE === 'api_football' ? 'API-Football (DATA_SOURCE=api_football)' : `The Odds API${process.env.FOOTBALL_DATA_KEY ? ' + football-data.org (Premier)' : ' (sin FOOTBALL_DATA_KEY: la Premier también sale de The Odds API)'}`);
+
   section('Conexión a Supabase');
-  const { data: leagues, error: lErr } = await admin.from('leagues').select('id,name,season,odds_sport_key,active').order('id');
+  const { data: leagues, error: lErr } = await admin.from('leagues').select('id,name,season,odds_sport_key,fd_code,active').order('id');
   if (lErr) {
     console.error('No se pudo leer `leagues`. ¿Ejecutaste supabase/migrations/0001_init.sql?', lErr.message);
     process.exit(1);
@@ -40,7 +47,7 @@ async function main() {
     const { ingestOdds } = await import('@/lib/data/odds-ingest');
     const { runPredictions } = await import('@/lib/data/predict');
 
-    section('1/4 Calendario + estadísticas + jugadores (API-Football)');
+    section('1/4 Calendario + resultados + estadísticas');
     const stats = await ingestStats();
     console.log(JSON.stringify({ ...stats, skipped: stats.skipped.length }, null, 2));
     if (stats.errors.length) console.error('Errores:', stats.errors);
@@ -52,7 +59,8 @@ async function main() {
 
     section('3/4 Cuotas (The Odds API)');
     const odds = await ingestOdds();
-    console.log(JSON.stringify({ ...odds, skipped: odds.skipped.length }, null, 2));
+    console.log(JSON.stringify({ ...odds, skipped: odds.skipped }, null, 2));
+    if (odds.usage.remaining !== null) console.log(`Créditos restantes de The Odds API: ${odds.usage.remaining}`);
     if (odds.errors.length) console.error('Errores:', odds.errors);
 
     section('4/4 Predicciones + Lecturas');
@@ -116,6 +124,12 @@ async function main() {
   }
   section('Sello del pick principal (próximos 7 días)');
   console.table(sellos);
+
+  const { data: bySource } = await admin.from('fixtures').select('source').returns<Array<{ source: string | null }>>();
+  const srcCount: Record<string, number> = {};
+  for (const r of bySource ?? []) srcCount[r.source ?? 'sin_fuente'] = (srcCount[r.source ?? 'sin_fuente'] ?? 0) + 1;
+  section('Partidos por fuente');
+  console.table(srcCount);
 
   const { data: log } = await admin.from('ingest_log').select('key,fetched_at').order('fetched_at', { ascending: false }).limit(12);
   section('Últimas llamadas cacheadas (ingest_log)');

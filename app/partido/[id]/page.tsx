@@ -104,6 +104,8 @@ export default async function PartidoPage({ params }: { params: { id: string } }
         </section>
       </FadeIn>
 
+      {top?.small_sample && <p className="rounded-md border border-border bg-elevated px-4 py-3 text-sm text-muted">{t('smallSample')}</p>}
+
       {review && <RevisionIA review={review} />}
 
       {analysis?.scores && <Marcador scores={analysis.scores} home={f.home.name} away={f.away.name} />}

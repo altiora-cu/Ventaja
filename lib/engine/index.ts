@@ -8,7 +8,7 @@ import { expectedGoals } from './rating';
 import type { EngineResult, FixtureInput, OddsQuote, PricedOutcome } from './types';
 
 export * from './types';
-export { sello, qualifiesAsPick, priceOutcomes } from './edge';
+export { sello, qualifiesAsPick, priceOutcomes, shrinkToMarket, MIN_PLAYED_FULL_MODEL } from './edge';
 export { buildCombos, COMBO_RULES } from './combos';
 export { expectedGoals } from './rating';
 export { scoreMatrix, topScores } from './dixon-coles';

@@ -93,3 +93,22 @@ export function priceOutcomes(outcomes: ModelOutcome[], quotes: OddsQuote[]): Pr
 export function qualifiesAsPick(o: { prob: number; edge: number | null }): boolean {
   return o.edge !== null && o.edge >= 0.05 && o.prob >= 0.55;
 }
+
+/** Partidos jugados a partir de los cuales el modelo se usa al 100 % (antes se mezcla con el mercado). */
+export const MIN_PLAYED_FULL_MODEL = 5;
+
+/**
+ * Arranque en frío: mientras un equipo tenga menos de MIN_PLAYED_FULL_MODEL partidos, la probabilidad se
+ * mezcla con la implícita de la cuota (sin margen). Con 0 partidos, prob = implícita → ventaja 0 → sello BAJA.
+ * Solo afecta a selecciones con cuota; el resto conserva la probabilidad del modelo.
+ */
+export function shrinkToMarket(priced: PricedOutcome[], minPlayed: number): PricedOutcome[] {
+  const w = Math.max(0, Math.min(1, minPlayed / MIN_PLAYED_FULL_MODEL)); // peso del modelo
+  if (w >= 1) return priced;
+  return priced.map((o) => {
+    if (o.implied_prob === null) return o;
+    const prob = w * o.prob + (1 - w) * o.implied_prob;
+    const edge = prob - o.implied_prob;
+    return { ...o, prob, edge, sello: sello(prob, edge) };
+  });
+}

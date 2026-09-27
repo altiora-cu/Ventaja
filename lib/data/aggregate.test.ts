@@ -7,7 +7,7 @@ function fx(id: number, kickoff: string, home_id: number, away_id: number, hg: n
     id, league_id: 262, season: 2026, round: null, kickoff, home_id, away_id, venue: null, city: null, referee: 'R. Pérez',
     status: 'FT', home_goals: hg, away_goals: ag, ht_home_goals: Math.min(hg, 1), ht_away_goals: 0,
     stats: { corners: { home: 6, away: 4 }, yellow: { home: 2, away: 3 }, red: { home: 0, away: 0 }, shots: { home: 12, away: 8 }, sot: { home: 5, away: 3 }, xg: { home: 1.6, away: 0.9 } },
-    updated_at: kickoff, ...extra,
+    source: null, external_id: null, odds_event_id: null, updated_at: kickoff, ...extra,
   };
 }
 

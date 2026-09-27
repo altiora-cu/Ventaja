@@ -4,6 +4,8 @@ Sala de análisis estadístico de fútbol. Producto propio que se alquila al mer
 
 Stack: Next.js 14 (App Router) · TypeScript · Tailwind · Supabase (Auth, Postgres, RLS) · Vercel (hosting + Cron) · Resend · PWA. Motor Poisson/Dixon-Coles en TypeScript (`/lib/engine`).
 
+**Fuentes de datos (por defecto, sin API-Football):** The Odds API (calendario maestro de 5 ligas, cuotas y resultados) + football-data.org (temporada completa de la Premier, descanso y árbitro). API-Football queda como fuente opcional con `DATA_SOURCE=api_football` (aporta corners, tarjetas, tiros, xG, jugadores y lesiones). Liga 1 y Liga 2 de Perú están desactivadas hasta tener un proveedor que las cubra.
+
 ## Puesta en marcha
 
 1. **Supabase**: crea un proyecto y ejecuta `supabase/migrations/0001_init.sql` en el SQL Editor. Activa Google como proveedor OAuth (Authentication → Providers) y añade `https://<tu-dominio>/auth/callback` a las Redirect URLs.
@@ -14,14 +16,14 @@ Stack: Next.js 14 (App Router) · TypeScript · Tailwind · Supabase (Auth, Post
    pnpm seed:admin      # crea christianmirabal82@gmail.com como admin (lee ADMIN_EMAIL / ADMIN_PASSWORD)
    pnpm dev
    ```
-4. **Primera carga de datos** (con las claves de API-Football y The Odds API):
+4. **Primera carga de datos** (con `ODDS_API_KEY` y, opcionalmente, `FOOTBALL_DATA_KEY`):
    ```bash
-   curl -H "Authorization: Bearer $CRON_SECRET" http://localhost:3000/api/cron/stats     # calendario + estadísticas + jugadores
-   curl -H "Authorization: Bearer $CRON_SECRET" http://localhost:3000/api/cron/fixtures  # próximos 7 días + resultados
-   curl -H "Authorization: Bearer $CRON_SECRET" http://localhost:3000/api/cron/odds      # cuotas → predicciones + Lecturas
+   pnpm ingest:check     # calendario + resultados + cuotas + predicciones, con diagnóstico
+   # o bien
+   curl -H "Authorization: Bearer $CRON_SECRET" http://localhost:3000/api/cron/daily
    ```
    O desde `/admin` con el botón **Actualizar partidos y cuotas**.
-5. **Vercel**: importa el repo, define las mismas variables y despliega. `vercel.json` ya trae los crons (requieren plan Pro para frecuencias < 1 día).
+5. **Vercel**: importa el repo, define las mismas variables y despliega. `vercel.json` programa un cron diario (`/api/cron/daily`) compatible con el plan Hobby; `vercel.pro.json` tiene la versión de crons cada 2–6 h para plan Pro.
 
 ## Scripts
 
@@ -32,14 +34,15 @@ Stack: Next.js 14 (App Router) · TypeScript · Tailwind · Supabase (Auth, Post
 | `pnpm lint` | ESLint (next/core-web-vitals) |
 | `pnpm test` | Vitest: motor (3 partidos de referencia), estados de cuenta, liquidación, emparejado de cuotas, agregación |
 | `pnpm seed:admin` | Crea/actualiza el admin en Supabase Auth |
-| `pnpm ingest:check` | Corre la primera ingesta completa y reporta partidos, cuotas emparejadas y sellos (`--skip-run` solo reporta) |
+| `pnpm ingest:check` | Corre la ingesta completa y reporta partidos por fuente, cuotas enlazadas, sellos y créditos (`--skip-run` solo reporta) |
 | `pnpm icons` | Regenera los PNG de la PWA desde el isotipo |
 
 ## Estructura
 
 ```
 app/                 rutas (Jornada /, /partido/[id], /picks, /buscar, /historial, /cuenta, /activar, /admin, /login, /registro, /legal)
-app/api/cron/*       jobs protegidos con CRON_SECRET (fixtures, stats, odds, predict, settle, accounts)
+app/api/cron/*       jobs protegidos con CRON_SECRET (daily encadena todo; fixtures, stats, odds, predict, settle, accounts por separado)
+lib/data/providers/  adaptadores de datos: The Odds API (eventos, resultados) y football-data.org
 app/api/og/pick/[id] imagen 1080×1350 para compartir picks
 components/          UI (Sello de Confianza, tarjetas, mercados colapsables, paywall, recordatorios, admin)
 lib/engine/          motor: Elo, xG ponderado, Dixon-Coles, mercados, mitades, props, jugadores, ventaja/sello, combinadas, Lectura

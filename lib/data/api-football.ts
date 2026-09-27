@@ -111,7 +111,10 @@ export const apiFootball = {
     do {
       const res = await fetch(`${BASE}/players?league=${league}&season=${season}&page=${page}`, { headers: { 'x-apisports-key': key }, cache: 'no-store' });
       if (!res.ok) throw new ApiFootballError(`API-Football /players → ${res.status}`, res.status);
-      const json = (await res.json()) as { response: AfPlayerSeason[]; paging: { current: number; total: number } };
+      const json = (await res.json()) as { response: AfPlayerSeason[]; paging: { current: number; total: number }; errors?: Record<string, string> | unknown[] };
+      if (json.errors && !Array.isArray(json.errors) && Object.keys(json.errors).length) {
+        throw new ApiFootballError(`API-Football /players: ${JSON.stringify(json.errors)}`);
+      }
       all.push(...(json.response ?? []));
       total = json.paging?.total ?? 1;
       page += 1;

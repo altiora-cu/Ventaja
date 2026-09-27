@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { analyzeFixture, buildCombos, predictFixture, sello, topPick } from './index';
+import { analyzeFixture, buildCombos, predictFixture, sello, shrinkToMarket, topPick } from './index';
 import { negBinPmf, poissonCdf, poissonOver, poissonPmf } from './poisson';
 import { scoreMatrix, sumWhere } from './dixon-coles';
 import { computeLeagueElo, eloExpected } from './elo';
@@ -300,5 +300,36 @@ describe('lectura de respaldo', () => {
     expect(text.split(/[.!?](\s|$)/).filter((s) => s.trim().length > 1).length).toBeLessThanOrEqual(5);
     expect(/garantizad|segura|fija/i.test(text)).toBe(false);
     expect(text).toContain('1.72');
+  });
+});
+
+describe('arranque en frío', () => {
+  it('sin datos de props no se emiten corners/tarjetas/tiros', () => {
+    const noProps = { ...tigresPumas, home: { ...tigresPumas.home, corners_for: null, corners_against: null, cards_for: null, cards_against: null, sot_for: null, sot_against: null }, away: { ...tigresPumas.away, corners_for: null, corners_against: null, cards_for: null, cards_against: null, sot_for: null, sot_against: null } };
+    const r = analyzeFixture(noProps);
+    expect(r.outcomes.some((o) => ['corners', 'cards', 'sot'].includes(o.market))).toBe(false);
+    expect(r.outcomes.some((o) => o.market === '1x2')).toBe(true);
+  });
+
+  it('con 0 partidos la probabilidad es la implícita y el sello BAJA; con 5 se usa el modelo', () => {
+    const quotes: OddsQuote[] = [
+      { bookmaker: 'A', market: '1x2', selection: 'home', line: null, price: 1.72 },
+      { bookmaker: 'A', market: '1x2', selection: 'draw', line: null, price: 3.8 },
+      { bookmaker: 'A', market: '1x2', selection: 'away', line: null, price: 4.6 },
+    ];
+    const { priced } = predictFixture(tigresPumas, quotes);
+    const cold = shrinkToMarket(priced, 0);
+    const home = cold.find((p) => p.market === '1x2' && p.selection === 'home')!;
+    expect(home.prob).toBeCloseTo(home.implied_prob!, 9);
+    expect(home.edge).toBeCloseTo(0, 9);
+    expect(home.sello).toBe('baja');
+    // Sin cuota no cambia
+    const btts = cold.find((p) => p.market === 'btts' && p.selection === 'yes')!;
+    expect(btts.prob).toBe(priced.find((p) => p.market === 'btts' && p.selection === 'yes')!.prob);
+    // Con muestra completa, idéntico al modelo
+    expect(shrinkToMarket(priced, 5)).toBe(priced);
+    // A mitad de camino, entre ambos
+    const half = shrinkToMarket(priced, 2.5).find((p) => p.market === '1x2' && p.selection === 'home')!;
+    expect(half.prob).toBeCloseTo((home.implied_prob! + priced.find((p) => p.market === '1x2' && p.selection === 'home')!.prob) / 2, 9);
   });
 });

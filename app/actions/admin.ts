@@ -7,6 +7,8 @@ import type { Profile } from '@/lib/db/types';
 import { runPredictions, todayKey } from '@/lib/data/predict';
 import { ingestFixtures } from '@/lib/data/ingest';
 import { ingestOdds } from '@/lib/data/odds-ingest';
+import { settlePicks } from '@/lib/data/settle';
+import { createAdminClient } from '@/lib/supabase/admin';
 
 export type AdminAction = 'activate30' | 'activate90' | 'extend7' | 'suspend' | 'unsuspend';
 
@@ -79,6 +81,22 @@ export async function adminIngestNow(): Promise<{ ok: boolean; count?: number; e
     const r = await runPredictions();
     revalidatePath('/');
     return { ok: true, count: r.predictions };
+  } catch (e) {
+    return { ok: false, error: (e as Error).message };
+  }
+}
+
+/** Carga un marcador a mano (cuando el proveedor no lo entregó a tiempo) y cierra los picks. */
+export async function adminSetScore(fixtureId: number, homeGoals: number, awayGoals: number): Promise<{ ok: boolean; count?: number; error?: string }> {
+  try {
+    await requireAdmin();
+    if (!Number.isInteger(fixtureId) || !Number.isInteger(homeGoals) || !Number.isInteger(awayGoals) || homeGoals < 0 || awayGoals < 0) return { ok: false, error: 'Datos inválidos' };
+    const admin = createAdminClient();
+    const { error } = await admin.from('fixtures').update({ status: 'FT', home_goals: homeGoals, away_goals: awayGoals, updated_at: new Date().toISOString() }).eq('id', fixtureId);
+    if (error) return { ok: false, error: error.message };
+    const r = await settlePicks();
+    revalidatePath('/historial');
+    return { ok: true, count: r.settled };
   } catch (e) {
     return { ok: false, error: (e as Error).message };
   }

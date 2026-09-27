@@ -2,7 +2,7 @@
   "name": "ventaja",
   "version": "0.1.0",
   "private": true,
-  "description": "Ventaja — Tu ventaja antes del pitazo. Herramienta de análisis estadístico de fútbol.",
+  "description": "Ventaja \u2014 Tu ventaja antes del pitazo. Herramienta de an\u00e1lisis estad\u00edstico de f\u00fatbol.",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -12,7 +12,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "seed:admin": "tsx scripts/seed-admin.ts",
-    "ingest:check": "NODE_OPTIONS=--conditions=react-server tsx scripts/check-ingest.ts",
+    "ingest:check": "cross-env NODE_OPTIONS=--conditions=react-server tsx scripts/check-ingest.ts",
     "icons": "tsx scripts/generate-icons.ts"
   },
   "dependencies": {
@@ -41,7 +41,8 @@
     "tailwindcss": "^3.4.19",
     "tsx": "^4.23.15",
     "typescript": "^5.9.3",
-    "vitest": "^3.2.4"
+    "vitest": "^3.2.4",
+    "cross-env": "^7.0.3"
   },
   "engines": {
     "node": ">=20"

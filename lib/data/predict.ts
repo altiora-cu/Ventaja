@@ -2,7 +2,7 @@ import 'server-only';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { createAdminClient } from '@/lib/supabase/admin';
 import type { Fixture, FixtureAnalysis, Injury, League, Odd, PlayerStats, Team, TeamStats, TopMarket } from '@/lib/db/types';
-import { predictFixture, topPick, type FixtureInput, type MarketKey, type OddsQuote, type PlayerInput, type TeamInput } from '@/lib/engine';
+import { predictFixture, shrinkToMarket, topPick, MIN_PLAYED_FULL_MODEL, type FixtureInput, type MarketKey, type OddsQuote, type PlayerInput, type TeamInput } from '@/lib/engine';
 import { generarLectura } from '@/lib/engine/lectura';
 import { revisarPick, revisionEnabled } from '@/lib/engine/revision';
 import { revisionKey, type RevisionFacts } from '@/lib/engine/revision-prompt';
@@ -128,8 +128,11 @@ export async function runPredictions(dateKey?: string): Promise<PredictReport> {
         .filter((o) => o.fixture_id === f.id)
         .map((o) => ({ bookmaker: o.bookmaker, market: o.market as MarketKey, selection: o.selection, line: o.line, price: Number(o.price) }));
 
-      const result = predictFixture(input, quotes);
+      const raw = predictFixture(input, quotes);
+      const minPlayed = Math.min(tsHome?.played ?? 0, tsAway?.played ?? 0);
+      const result = { ...raw, priced: shrinkToMarket(raw.priced, minPlayed) };
       const pick = topPick(result.priced);
+      const smallSample = minPlayed < MIN_PLAYED_FULL_MODEL;
 
       // Guardar predicciones (reemplazo completo)
       await admin.from('predictions').delete().eq('fixture_id', f.id);
@@ -196,7 +199,7 @@ export async function runPredictions(dateKey?: string): Promise<PredictReport> {
           lectura_en: lecturaEn,
           lectura_locale: 'es',
           lectura_sello: pick?.sello ?? null,
-          top_market: topMarket,
+          top_market: topMarket ? { ...topMarket, small_sample: smallSample, min_played: minPlayed } : null,
           ai_review: aiReview,
           calculated_at: new Date().toISOString(),
         },
