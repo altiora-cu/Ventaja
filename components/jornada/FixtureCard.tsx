@@ -53,6 +53,7 @@ export async function FixtureCard({ fixture: f, lock, timeZone }: { fixture: Fix
           </span>
           {top && selloFinal && !locked && (
             <span className="inline-flex items-center gap-2">
+              {top.small_sample && <span className="text-[11px] text-faint">{t('smallSample')}</span>}
               {review && review.verdict !== 'concuerda' && <span className="text-[11px] text-[var(--warning)]">{t(review.verdict === 'cautela' ? 'aiCaution' : 'aiDisagree')}</span>}
               <Sello nivel={selloFinal} animate={false} />
             </span>

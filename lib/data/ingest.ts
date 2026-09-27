@@ -8,6 +8,25 @@ import { apiFootball, statMap, type AfFixture } from './api-football';
 import { computeReferees, computeTeamStats, finished } from './aggregate';
 import { markFetched, shouldFetch, TTL } from './cache';
 import { FINISHED_STATUSES } from './statuses';
+import { masterProvider, oddsProvider } from './providers';
+import type { ProviderFixture } from './providers/types';
+import { TeamResolver } from './teams';
+import { matchFixturesToEvents } from './matching';
+
+/** Fuente de datos: 'providers' (The Odds API + football-data.org, por defecto) o 'api_football' (plan de pago). */
+export function isApiFootballSource(): boolean {
+  return process.env.DATA_SOURCE === 'api_football' && Boolean(process.env.API_FOOTBALL_KEY);
+}
+
+/** Partidos próximos + resultados. Despacha según DATA_SOURCE. */
+export async function ingestFixtures(days = 7): Promise<IngestReport> {
+  return isApiFootballSource() ? ingestFixturesApiFootball(days) : ingestFixturesProviders();
+}
+
+/** Estadísticas de equipo (y jugadores/lesiones solo con API-Football). Despacha según DATA_SOURCE. */
+export async function ingestStats(): Promise<IngestReport> {
+  return isApiFootballSource() ? ingestStatsApiFootball() : ingestStatsProviders();
+}
 
 export interface IngestReport {
   leagues: number;
@@ -49,6 +68,9 @@ function fixtureRow(f: AfFixture, existing?: Partial<Fixture>): Omit<Fixture, 'u
     ht_home_goals: f.score.halftime?.home ?? null,
     ht_away_goals: f.score.halftime?.away ?? null,
     stats: existing?.stats ?? null,
+    source: 'api_football',
+    external_id: String(f.fixture.id),
+    odds_event_id: existing?.odds_event_id ?? null,
     updated_at: new Date().toISOString(),
   };
 }
@@ -66,7 +88,7 @@ async function upsertTeamsAndFixtures(admin: SupabaseClient, fixtures: AfFixture
 
   // Conservar stats ya guardadas
   const ids = fixtures.map((f) => f.fixture.id);
-  const { data: existing } = await admin.from('fixtures').select('id,stats').in('id', ids).returns<Array<{ id: number; stats: FixtureStats | null }>>();
+  const { data: existing } = await admin.from('fixtures').select('id,stats,odds_event_id').in('id', ids).returns<Array<{ id: number; stats: FixtureStats | null; odds_event_id: string | null }>>();
   const existingMap = new Map((existing ?? []).map((e) => [e.id, e]));
 
   const rows = fixtures.map((f) => fixtureRow(f, existingMap.get(f.fixture.id)));
@@ -76,7 +98,7 @@ async function upsertTeamsAndFixtures(admin: SupabaseClient, fixtures: AfFixture
 }
 
 /** Partidos de los próximos 7 días + resultados de ayer/hoy para las ligas activas. */
-export async function ingestFixtures(days = 7): Promise<IngestReport> {
+export async function ingestFixturesApiFootball(days = 7): Promise<IngestReport> {
   const admin = createAdminClient();
   const report = emptyReport();
   const leagues = await activeLeagues(admin);
@@ -164,7 +186,7 @@ export async function fetchMissingFixtureStats(admin: SupabaseClient, report: In
  * - Recalcula team_stats, Elo y árbitros desde nuestros fixtures (sin llamadas).
  * - Jugadores por liga (paginado, cacheado 20 h). Lesiones del día por liga.
  */
-export async function ingestStats(): Promise<IngestReport> {
+export async function ingestStatsApiFootball(): Promise<IngestReport> {
   const admin = createAdminClient();
   const report = emptyReport();
   const leagues = await activeLeagues(admin);
@@ -289,6 +311,7 @@ export async function recomputeTeamStats(admin: SupabaseClient, leagues: League[
 
 /** Alineaciones confirmadas de los partidos de las próximas 2 horas (para minutos esperados y bajas). */
 export async function ingestLineups(): Promise<number> {
+  if (!isApiFootballSource()) return 0;
   const admin = createAdminClient();
   const now = new Date();
   const { data: soon } = await admin
@@ -323,4 +346,174 @@ export async function ingestLineups(): Promise<number> {
     }
   }
   return n;
+}
+
+
+// =============================================================================
+// Ruta por defecto: proveedores sin API-Football
+// =============================================================================
+
+type FixtureUpsert = Omit<Fixture, 'updated_at' | 'stats'> & { updated_at: string; stats?: FixtureStats | null };
+
+/** Inserta/actualiza partidos de un proveedor para una liga, resolviendo equipos por nombre. */
+async function upsertProviderFixtures(admin: SupabaseClient, resolver: TeamResolver, league: League, rows: ProviderFixture[], report: IngestReport): Promise<number> {
+  if (!rows.length) return 0;
+  const source = rows[0].source;
+  const { data: existing } = await admin
+    .from('fixtures')
+    .select('id,external_id,odds_event_id,status,home_goals,away_goals')
+    .eq('source', source)
+    .in('external_id', rows.map((r) => r.external_id))
+    .returns<Array<{ id: number; external_id: string; odds_event_id: string | null; status: string; home_goals: number | null; away_goals: number | null }>>();
+  const byExt = new Map((existing ?? []).map((e) => [e.external_id, e]));
+
+  const upserts: FixtureUpsert[] = [];
+  for (const r of rows) {
+    try {
+      const [home, away] = await Promise.all([
+        resolver.resolve(r.home_name, source, { logo: r.home_logo, external_id: r.home_external_id, country: league.country }),
+        resolver.resolve(r.away_name, source, { logo: r.away_logo, external_id: r.away_external_id, country: league.country }),
+      ]);
+      const prev = byExt.get(r.external_id);
+      let id = prev?.id;
+      if (!id) {
+        const { data: idRow, error } = await admin.rpc('next_fixture_id');
+        if (error) throw error;
+        id = Number(idRow);
+      }
+      // No pisar un resultado ya cerrado con datos vacíos del calendario.
+      const keepResult = prev && FINISHED_STATUSES.has(prev.status) && r.home_goals == null;
+      upserts.push({
+        id,
+        league_id: league.id,
+        season: league.season,
+        round: r.round ?? null,
+        kickoff: r.kickoff,
+        home_id: home.id,
+        away_id: away.id,
+        venue: null,
+        city: null,
+        referee: r.referee ?? null,
+        status: keepResult ? prev!.status : r.status,
+        home_goals: keepResult ? prev!.home_goals : r.home_goals ?? null,
+        away_goals: keepResult ? prev!.away_goals : r.away_goals ?? null,
+        ht_home_goals: r.ht_home_goals ?? null,
+        ht_away_goals: r.ht_away_goals ?? null,
+        source,
+        external_id: r.external_id,
+        odds_event_id: r.odds_event_id ?? prev?.odds_event_id ?? null,
+        updated_at: new Date().toISOString(),
+      });
+    } catch (e) {
+      report.errors.push(`${league.name} ${r.home_name} vs ${r.away_name}: ${(e as Error).message}`);
+    }
+  }
+  for (let i = 0; i < upserts.length; i += 200) {
+    const { error } = await admin.from('fixtures').upsert(upserts.slice(i, i + 200), { onConflict: 'id' });
+    if (error) throw error;
+  }
+  return upserts.length;
+}
+
+/**
+ * Calendario y resultados desde los proveedores:
+ * - football-data.org (ligas con fd_code y clave): temporada completa en una llamada (0 USD).
+ * - The Odds API (resto): eventos próximos (0 créditos) y resultados de 3 días (2 créditos/liga, solo si hacen falta).
+ * - Ligas con ambos: football-data es maestro; los eventos de Odds se enlazan por nombre+hora y se guarda odds_event_id.
+ */
+export async function ingestFixturesProviders(): Promise<IngestReport> {
+  const admin = createAdminClient();
+  const report = emptyReport();
+  const leagues = await activeLeagues(admin);
+  report.leagues = leagues.length;
+  const resolver = new TeamResolver(admin);
+  await resolver.load();
+  const now = Date.now();
+
+  for (const league of leagues) {
+    const provider = masterProvider(league);
+    if (!provider) {
+      report.skipped.push(`${league.name}: sin proveedor (activa football-data o The Odds API)`);
+      continue;
+    }
+    // 1. Calendario (cache 6 h)
+    const calKey = `calendar:${provider.key}:${league.id}:${league.season}`;
+    if (await shouldFetch(admin, calKey, TTL.fixtures)) {
+      try {
+        const rows = await provider.upcoming(league);
+        report.fixturesUpserted += await upsertProviderFixtures(admin, resolver, league, rows, report);
+        await markFetched(admin, calKey, `${provider.key} calendar`, rows.length);
+      } catch (e) {
+        report.errors.push(`${calKey}: ${(e as Error).message}`);
+      }
+    } else report.skipped.push(calKey);
+
+    // 2. Enlazar eventos de Odds cuando el maestro es football-data (0 créditos)
+    if (provider.key === 'football_data' && league.odds_sport_key) {
+      const linkKey = `odds-link:${league.id}`;
+      if (await shouldFetch(admin, linkKey, TTL.fixtures)) {
+        try {
+          const events = await oddsProvider.upcoming(league);
+          const { data: pending } = await admin
+            .from('fixtures')
+            .select('id,kickoff,home:teams!fixtures_home_id_fkey(name),away:teams!fixtures_away_id_fkey(name)')
+            .eq('league_id', league.id)
+            .is('odds_event_id', null)
+            .gte('kickoff', new Date(now - 3600_000).toISOString())
+            .returns<Array<{ id: number; kickoff: string; home: { name: string }; away: { name: string } }>>();
+          const matched = matchFixturesToEvents(
+            (pending ?? []).map((f) => ({ id: f.id, kickoff: f.kickoff, home: f.home.name, away: f.away.name })),
+            events.map((e) => ({ id: e.external_id, commence_time: e.kickoff, home_team: e.home_name, away_team: e.away_name })),
+          );
+          for (const [fixtureId, ev] of matched) await admin.from('fixtures').update({ odds_event_id: ev.id }).eq('id', fixtureId);
+          await markFetched(admin, linkKey, `linked ${matched.size}/${(pending ?? []).length}`, events.length);
+        } catch (e) {
+          report.errors.push(`${linkKey}: ${(e as Error).message}`);
+        }
+      }
+    }
+
+    // 3. Resultados desde The Odds API (solo cuando hay partidos empezados sin marcador; 2 créditos)
+    if (provider.key === 'odds_api') {
+      const { data: needing } = await admin
+        .from('fixtures')
+        .select('id,external_id')
+        .eq('league_id', league.id)
+        .eq('source', 'odds_api')
+        .not('status', 'in', '("FT","AET","PEN","PST","CANC","AWD")')
+        .gte('kickoff', new Date(now - 3 * 86_400_000).toISOString())
+        .lte('kickoff', new Date(now - 2 * 3600_000).toISOString())
+        .returns<Array<{ id: number; external_id: string }>>();
+      if (needing?.length) {
+        const key = `scores:${league.odds_sport_key}`;
+        if (await shouldFetch(admin, key, TTL.results)) {
+          try {
+            const results = await provider.results(league, 3);
+            const byExt = new Map(results.map((r) => [r.external_id, r]));
+            let updated = 0;
+            for (const f of needing) {
+              const r = byExt.get(f.external_id);
+              if (!r) continue;
+              await admin.from('fixtures').update({ status: 'FT', home_goals: r.home_goals, away_goals: r.away_goals, updated_at: new Date().toISOString() }).eq('id', f.id);
+              updated++;
+            }
+            report.statsFetched += updated;
+            await markFetched(admin, key, `scores ${updated}/${needing.length}`, results.length);
+          } catch (e) {
+            report.errors.push(`${key}: ${(e as Error).message}`);
+          }
+        } else report.skipped.push(key);
+      }
+    }
+  }
+  return report;
+}
+
+/** Sin API-Football: asegura el calendario y recalcula team_stats, Elo y árbitros desde nuestros fixtures. */
+export async function ingestStatsProviders(): Promise<IngestReport> {
+  const report = await ingestFixturesProviders();
+  const admin = createAdminClient();
+  const leagues = await activeLeagues(admin);
+  report.teamStats = await recomputeTeamStats(admin, leagues);
+  return report;
 }

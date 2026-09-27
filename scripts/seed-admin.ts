@@ -3,7 +3,10 @@
  * Uso: ADMIN_EMAIL=... ADMIN_PASSWORD=... pnpm seed:admin
  * La contraseña solo vive en .env.local / Vercel; nunca en el repo.
  */
-import 'dotenv/config';
+import { config as loadEnv } from 'dotenv';
+
+// Carga .env.local (prioridad) y .env, desde la raíz del proyecto.
+loadEnv({ path: ['.env.local', '.env'] });
 import { createClient } from '@supabase/supabase-js';
 
 async function main() {

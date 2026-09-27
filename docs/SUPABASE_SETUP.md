@@ -141,8 +141,9 @@ pnpm dev
 
 | Servicio | Plan gratis | Sirve para Ventaja |
 |---|---|---|
-| API-Football | 100 llamadas/día y **solo temporadas 2021–2023** | **No** para partidos actuales. Sirve para probar el motor con datos viejos. El plan de pago empieza en la gama de ~20–40 USD/mes según llamadas/día (ver api-football.com/pricing). Es el único gasto obligatorio. |
-| The Odds API | 500 créditos/mes | **Sí** en modo económico: `ODDS_REGIONS=us`, `ODDS_MARKETS=h2h,totals`, `ODDS_EXTRA_MARKETS=false`, `ODDS_TTL_HOURS=24` (≈10 créditos/día). Sin hándicap ni BTTS con cuota hasta pasar a un plan de pago. |
+| API-Football | 100 llamadas/día y solo temporadas anteriores | **Opcional.** Desde la migración 0003 la app funciona sin API-Football: calendario, cuotas y resultados salen de The Odds API y la Premier completa de football-data.org. Si más adelante contratas el plan de pago, pon `DATA_SOURCE=api_football` y recuperas corners, tarjetas, tiros, xG, jugadores y lesiones. |
+| football-data.org | Gratis, 10 llamadas/min | **Sí.** Temporada completa de la Premier (descanso y árbitro incluidos). Registro en football-data.org/client/register → clave por email → `FOOTBALL_DATA_KEY`. |
+| The Odds API | 500 créditos/mes | **Sí** en modo económico: `ODDS_REGIONS=us`, `ODDS_MARKETS=h2h,totals`, `ODDS_EXTRA_MARKETS=false`, `ODDS_TTL_HOURS=24`. Calendario gratis; cuotas 2 créditos por liga y día; resultados 2 créditos por liga solo los días con partidos. Estimación: 250–300 créditos/mes para 5 ligas. `ODDS_MIN_CREDITS=50` reserva créditos para resultados. Liga 1 y Liga 2 de Perú quedan desactivadas (sin cobertura). |
 | Supabase | Free | Sí, hasta tener clientes pagando (pausa por inactividad). |
 | Vercel | Hobby | Sí para desplegar; los crons de menos de 1 día requieren Pro. Alternativa gratis: el botón de `/admin` una vez al día. |
 | Resend | Free | Sí (3.000 emails/mes). |

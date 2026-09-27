@@ -91,7 +91,8 @@
     "postponed": "Postponed",
     "matchesCount": "{count, plural, =1 {# match} other {# matches}}",
     "aiCaution": "AI: caution",
-    "aiDisagree": "AI: disagrees"
+    "aiDisagree": "AI: disagrees",
+    "smallSample": "Small sample"
   },
   "partido": {
     "title": "Match sheet",
@@ -132,7 +133,8 @@
     "aiVerdictLabel": "Verdict",
     "aiRisks": "Risks found",
     "aiSelloNote": "Model seal {modelo} → final seal {final}",
-    "aiDisclaimer": "The AI audits the model pick using form, absences and odds. It can only lower the seal, never raise it. It is not a prediction."
+    "aiDisclaimer": "The AI audits the model pick using form, absences and odds. It can only lower the seal, never raise it. It is not a prediction.",
+    "smallSample": "Small sample: one of the teams has fewer than 5 matches with data. Probability is blended with market odds until the sample fills in."
   },
   "markets": {
     "1x2": "Result (1X2)",
@@ -308,7 +310,12 @@
     "actions": "Actions",
     "noUsers": "No matching users.",
     "updated": "Updated",
-    "role": "Role"
+    "role": "Role",
+    "setScore": "Enter score manually",
+    "fixtureId": "Match ID",
+    "homeGoals": "Home goals",
+    "awayGoals": "Away goals",
+    "scoreSaved": "Score saved and picks settled."
   },
   "auth": {
     "loginTitle": "Enter your analysis room",
@@ -344,7 +351,7 @@
     "dataTitle": "Data and privacy",
     "data": "We store your email, language and account dates to operate the service. We do not sell your data. You can request account deletion by messaging us on WhatsApp.",
     "sourcesTitle": "Sources",
-    "sources": "Statistics from API-Football and informational odds from The Odds API. Ventaja has no commercial ties to any sportsbook and includes no affiliate links.",
+    "sources": "Schedule, informational odds and results from The Odds API; full Premier League season from football-data.org; optionally statistics from API-Football. Ventaja has no commercial ties to any sportsbook and includes no affiliate links.",
     "subscriptionTitle": "Subscription",
     "subscription": "Access is activated manually after payment agreed via WhatsApp. The subscription covers use of the analysis tool and can be cancelled at any time."
   },

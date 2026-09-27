@@ -17,6 +17,8 @@ export interface Profile {
   last_seen_at: string | null;
 }
 
+export type DataSource = 'api_football' | 'odds_api' | 'football_data';
+
 export interface League {
   id: number;
   name: string;
@@ -24,6 +26,7 @@ export interface League {
   logo: string | null;
   season: number;
   odds_sport_key: string | null;
+  fd_code: string | null;
   active: boolean;
 }
 
@@ -33,6 +36,9 @@ export interface Team {
   short_name: string | null;
   logo: string | null;
   country: string | null;
+  slug: string | null;
+  source: DataSource | null;
+  external_id: string | null;
 }
 
 export interface Referee {
@@ -69,6 +75,9 @@ export interface Fixture {
   ht_home_goals: number | null;
   ht_away_goals: number | null;
   stats: FixtureStats | null;
+  source: DataSource | null;
+  external_id: string | null;
+  odds_event_id: string | null;
   updated_at: string;
 }
 
@@ -190,6 +199,9 @@ export interface TopMarket {
   best_bookmaker?: string | null;
   edge: number | null;
   sello: Sello;
+  /** true si algún equipo tiene < 5 partidos: la probabilidad se mezcló con el mercado. */
+  small_sample?: boolean;
+  min_played?: number;
 }
 
 export type AiVerdict = 'concuerda' | 'cautela' | 'discrepa';

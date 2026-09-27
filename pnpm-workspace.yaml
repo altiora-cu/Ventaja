@@ -1,0 +1,7 @@
+# Scripts de instalación permitidos (pnpm 10+ los bloquea por defecto).
+onlyBuiltDependencies:
+  - '@parcel/watcher'
+  - '@swc/core'
+  - esbuild
+  - unrs-resolver
+  - sharp

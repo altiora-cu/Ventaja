@@ -21,9 +21,13 @@ interface FixtureLite {
   id: number;
   kickoff: string;
   league_id: number;
+  odds_event_id: string | null;
   home: Pick<Team, 'name'>;
   away: Pick<Team, 'name'>;
 }
+
+/** Créditos que se reservan para resultados (no se recuperan si faltan). */
+const ODDS_MIN_CREDITS = Number(process.env.ODDS_MIN_CREDITS) || 50;
 
 /**
  * Cuotas de The Odds API para los partidos de los próximos 3 días.
@@ -38,7 +42,7 @@ export async function ingestOdds(): Promise<OddsReport> {
 
   const { data: fixtures } = await admin
     .from('fixtures')
-    .select('id,kickoff,league_id,home:teams!fixtures_home_id_fkey(name),away:teams!fixtures_away_id_fkey(name)')
+    .select('id,kickoff,league_id,odds_event_id,home:teams!fixtures_home_id_fkey(name),away:teams!fixtures_away_id_fkey(name)')
     .gte('kickoff', new Date(now.getTime() - 3600_000).toISOString())
     .lte('kickoff', addDays(now, 3).toISOString())
     .in('status', ['NS', 'TBD'])
@@ -55,13 +59,30 @@ export async function ingestOdds(): Promise<OddsReport> {
       report.skipped.push(key);
       continue;
     }
+    const remaining = oddsUsage().remaining;
+    if (remaining !== null && remaining < ODDS_MIN_CREDITS) {
+      report.skipped.push(`${key}: reserva de créditos (${remaining} < ${ODDS_MIN_CREDITS})`);
+      continue;
+    }
     report.sports++;
     try {
       const events = await oddsApi.sportOdds(sportKey);
-      const matched = matchFixturesToEvents(
-        fxs.map((f) => ({ id: f.id, kickoff: f.kickoff, home: f.home.name, away: f.away.name })),
-        events,
-      );
+      // 1) Por identificador de evento (sin comparar nombres)
+      const matched = new Map<number, { id: string }>();
+      const eventIds = new Set(events.map((e) => e.id));
+      for (const f of fxs) if (f.odds_event_id && eventIds.has(f.odds_event_id)) matched.set(f.id, { id: f.odds_event_id });
+      // 2) Los que aún no tienen evento: por nombre + hora, y se guarda el id para la próxima vez
+      const unlinked = fxs.filter((f) => !f.odds_event_id);
+      if (unlinked.length) {
+        const byName = matchFixturesToEvents(
+          unlinked.map((f) => ({ id: f.id, kickoff: f.kickoff, home: f.home.name, away: f.away.name })),
+          events.filter((e) => ![...matched.values()].some((m) => m.id === e.id)),
+        );
+        for (const [fixtureId, ev] of byName) {
+          matched.set(fixtureId, { id: ev.id });
+          await admin.from('fixtures').update({ odds_event_id: ev.id }).eq('id', fixtureId);
+        }
+      }
       report.eventsMatched += matched.size;
       const fetchedAt = new Date().toISOString();
 

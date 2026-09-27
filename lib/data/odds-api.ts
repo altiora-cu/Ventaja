@@ -50,10 +50,8 @@ async function get<T>(path: string, params: Record<string, string>): Promise<T> 
   if (!key) throw new OddsApiError('Falta ODDS_API_KEY');
   const qs = new URLSearchParams({ apiKey: key, ...params });
   const res = await fetch(`${BASE}${path}?${qs}`, { cache: 'no-store' });
-  lastUsage = {
-    remaining: Number(res.headers.get('x-requests-remaining') ?? NaN) || null,
-    used: Number(res.headers.get('x-requests-used') ?? NaN) || null,
-  };
+  const num = (h: string | null) => (h === null || h === '' || Number.isNaN(Number(h)) ? null : Number(h));
+  lastUsage = { remaining: num(res.headers.get('x-requests-remaining')), used: num(res.headers.get('x-requests-used')) };
   if (!res.ok) throw new OddsApiError(`Odds API ${path} → ${res.status}`, res.status);
   return (await res.json()) as T;
 }
@@ -68,7 +66,25 @@ export const MAIN_MARKETS = process.env.ODDS_MARKETS ?? 'h2h,totals,spreads';
 export const EXTRA_MARKETS = 'btts,h2h_h1,totals_h1';
 export const EXTRA_MARKETS_ENABLED = process.env.ODDS_EXTRA_MARKETS !== 'false';
 
+export interface OaEventLite {
+  id: string;
+  sport_key: string;
+  commence_time: string;
+  home_team: string;
+  away_team: string;
+}
+
+export interface OaScore extends OaEventLite {
+  completed: boolean;
+  scores: Array<{ name: string; score: string }> | null;
+  last_update: string | null;
+}
+
 export const oddsApi = {
+  /** Calendario de eventos próximos (0 créditos). */
+  events: (sportKey: string) => get<OaEventLite[]>(`/sports/${sportKey}/events`, { dateFormat: 'iso' }),
+  /** Resultados de los últimos `daysFrom` días (1–3). Coste: 2 créditos. */
+  scores: (sportKey: string, daysFrom = 3) => get<OaScore[]>(`/sports/${sportKey}/scores`, { daysFrom: String(daysFrom), dateFormat: 'iso' }),
   /** Cuotas principales de todos los eventos próximos del deporte (coste: regiones × mercados). */
   sportOdds: (sportKey: string) =>
     get<OaEvent[]>(`/sports/${sportKey}/odds`, { regions: ODDS_REGIONS, markets: MAIN_MARKETS, oddsFormat: 'decimal', dateFormat: 'iso' }),
