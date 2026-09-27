@@ -89,7 +89,9 @@
     "finished": "Final",
     "live": "En juego",
     "postponed": "Aplazado",
-    "matchesCount": "{count, plural, =1 {# partido} other {# partidos}}"
+    "matchesCount": "{count, plural, =1 {# partido} other {# partidos}}",
+    "aiCaution": "IA: cautela",
+    "aiDisagree": "IA: discrepa"
   },
   "partido": {
     "title": "Ficha de partido",
@@ -125,7 +127,12 @@
     "topScorers": "Goleador probable",
     "playerShots": "Tiros a puerta por jugador",
     "openAll": "Abrir todo",
-    "kickoff": "Pitazo"
+    "kickoff": "Pitazo",
+    "aiReview": "Revisión IA",
+    "aiVerdictLabel": "Veredicto",
+    "aiRisks": "Riesgos detectados",
+    "aiSelloNote": "Sello del modelo {modelo} → sello final {final}",
+    "aiDisclaimer": "La IA audita el pick del modelo con forma, bajas y cuotas. Solo puede bajar el sello, nunca subirlo. No es una predicción."
   },
   "markets": {
     "1x2": "Resultado (1X2)",
@@ -354,5 +361,10 @@
   },
   "og": {
     "footer": "Análisis estadístico · 21+ · Juega con responsabilidad"
+  },
+  "aiVerdict": {
+    "concuerda": "Concuerda",
+    "cautela": "Cautela",
+    "discrepa": "Discrepa"
   }
 }

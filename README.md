@@ -59,6 +59,15 @@ emails/              plantillas de recordatorio (día 26, 29 y 31)
 - Picks: ventaja ≥ 5% y prob ≥ 55%. Combinadas de 2/3/4 selecciones (prob. conjunta ≥ 45/30/18%) de partidos distintos.
 - La combinada de 2 selecciones se muestra como **"Conservadora"**: la palabra "segura" está prohibida en toda la UI.
 
+## Revisión IA
+
+Además de la Lectura, Claude audita el pick principal de cada partido con forma, bajas, cuotas y probabilidades del modelo y devuelve un veredicto (concuerda / cautela / discrepa), riesgos concretos y un **sello final que solo puede bajar**. Se guarda en `fixture_analysis.ai_review`, se cachea por contexto y se regenera solo si cambian el pick, el sello, las bajas o las cuotas. Sin `ANTHROPIC_API_KEY` la app muestra el sello del modelo sin cambios. Coste estimado con Haiku: < 3 USD/mes.
+
+## Guías
+
+- `docs/SUPABASE_SETUP.md`: configuración paso a paso desde el panel (Supabase, Google OAuth, Vercel).
+- `docs/TERMINAL_SETUP.md`: runbook de terminal de copiar y pegar (CLI de Supabase, seed, ingesta, Vercel).
+
 ## Disclaimer
 
 Ventaja es una herramienta de análisis estadístico. No garantiza resultados ni acepta apuestas. Solo para mayores de 21 años. Juega con responsabilidad. 1-800-GAMBLER.

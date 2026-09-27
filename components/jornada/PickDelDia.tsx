@@ -11,7 +11,8 @@ import type { Locale } from '@/i18n/config';
 import type { LockMode } from './FixtureCard';
 
 export function choosePickOfDay(fixtures: FixtureWithAnalysis[]): FixtureWithAnalysis | null {
-  const candidates = fixtures.filter((f) => f.analysis?.top_market?.sello === 'alta' && f.status === 'NS');
+  // Sello final: el de la Revisión IA si existe (solo puede bajar). Excluye picks con veredicto 'discrepa'.
+  const candidates = fixtures.filter((f) => (f.analysis?.ai_review?.sello_final ?? f.analysis?.top_market?.sello) === 'alta' && f.analysis?.ai_review?.verdict !== 'discrepa' && f.status === 'NS');
   if (!candidates.length) return null;
   return candidates.sort((a, b) => (b.analysis!.top_market!.edge ?? 0) - (a.analysis!.top_market!.edge ?? 0))[0];
 }
@@ -67,7 +68,7 @@ export async function PickDelDia({ fixture: f, lock, timeZone }: { fixture: Fixt
               <p className="text-xs text-faint">{tc('edge')}</p>
               <p className="num text-2xl text-ventaja">{signedPct(top.edge)}</p>
             </div>
-            <Sello nivel={top.sello} animate={false} />
+            <Sello nivel={f.analysis?.ai_review?.sello_final ?? top.sello} animate={false} />
           </div>
         </div>
         {locked && (

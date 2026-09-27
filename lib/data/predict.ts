@@ -4,6 +4,8 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import type { Fixture, FixtureAnalysis, Injury, League, Odd, PlayerStats, Team, TeamStats, TopMarket } from '@/lib/db/types';
 import { predictFixture, topPick, type FixtureInput, type MarketKey, type OddsQuote, type PlayerInput, type TeamInput } from '@/lib/engine';
 import { generarLectura } from '@/lib/engine/lectura';
+import { revisarPick, revisionEnabled } from '@/lib/engine/revision';
+import { revisionKey, type RevisionFacts } from '@/lib/engine/revision-prompt';
 import type { LecturaFacts } from '@/lib/engine/lectura-prompt';
 import { selectionLabel } from '@/lib/labels';
 import { addDays, toDateKey } from '@/lib/utils';
@@ -14,8 +16,12 @@ export interface PredictReport {
   fixtures: number;
   predictions: number;
   lecturas: number;
+  revisiones: number;
   errors: string[];
 }
+
+/** Máximo de revisiones IA por corrida (control de coste). */
+const AI_REVIEW_MAX = Number(process.env.AI_REVIEW_MAX) || 40;
 
 type FixtureRow = Fixture & { home: Team; away: Team; league: League };
 
@@ -44,7 +50,7 @@ function toTeamInput(team: Team, ts: TeamStats | undefined, missing: number): Te
 /** Recalcula predicciones y Lecturas de los partidos entre hoy y +3 días (o de una fecha concreta). */
 export async function runPredictions(dateKey?: string): Promise<PredictReport> {
   const admin = createAdminClient();
-  const report: PredictReport = { fixtures: 0, predictions: 0, lecturas: 0, errors: [] };
+  const report: PredictReport = { fixtures: 0, predictions: 0, lecturas: 0, revisiones: 0, errors: [] };
   const leagues = await activeLeagues(admin);
 
   const now = new Date();
@@ -154,7 +160,7 @@ export async function runPredictions(dateKey?: string): Promise<PredictReport> {
         ? { market: pick.market, selection: pick.selection, line: pick.line, player_name: pick.player_name ?? null, prob: round(pick.prob), best_price: pick.best_price, best_bookmaker: pick.best_bookmaker, edge: pick.edge === null ? null : round(pick.edge), sello: pick.sello }
         : null;
       let lectura = prev?.lectura ?? null;
-      let lecturaEn = (prev as (FixtureAnalysis & { lectura_en?: string | null }) | null)?.lectura_en ?? null;
+      let lecturaEn = prev?.lectura_en ?? null;
       const selloChanged = !prev?.lectura || prev.lectura_sello !== (pick?.sello ?? null);
       if (pick && selloChanged) {
         const facts = buildFacts(f, input, result, pick, tsHome, tsAway);
@@ -162,6 +168,22 @@ export async function runPredictions(dateKey?: string): Promise<PredictReport> {
         lectura = es.text;
         lecturaEn = en.text;
         report.lecturas++;
+      }
+
+      // Revisión IA del pick principal (solo con cuota; cacheada por clave de contexto)
+      let aiReview = prev?.ai_review ?? null;
+      if (pick && pick.best_price && revisionEnabled()) {
+        const rfacts = buildRevisionFacts(f, input, result, pick, tsHome, tsAway, fInj, quotes.length ? new Set(quotes.map((q) => q.bookmaker)).size : 0, refMap);
+        const key = revisionKey(rfacts);
+        if ((!aiReview || aiReview.key !== key) && report.revisiones < AI_REVIEW_MAX) {
+          const r = await revisarPick(rfacts);
+          if (r) {
+            aiReview = r;
+            report.revisiones++;
+          }
+        }
+      } else if (!pick) {
+        aiReview = null;
       }
 
       await admin.from('fixture_analysis').upsert(
@@ -175,6 +197,7 @@ export async function runPredictions(dateKey?: string): Promise<PredictReport> {
           lectura_locale: 'es',
           lectura_sello: pick?.sello ?? null,
           top_market: topMarket,
+          ai_review: aiReview,
           calculated_at: new Date().toISOString(),
         },
         { onConflict: 'fixture_id' },
@@ -224,6 +247,49 @@ function buildFacts(
     topMarketPrice: pick.best_price,
     topMarketEdge: pick.edge,
     sello: pick.sello,
+  };
+}
+
+function buildRevisionFacts(
+  f: FixtureRow,
+  input: FixtureInput,
+  result: ReturnType<typeof predictFixture>,
+  pick: NonNullable<ReturnType<typeof topPick>>,
+  tsHome: TeamStats | undefined,
+  tsAway: TeamStats | undefined,
+  injuries: Injury[],
+  bookmakers: number,
+  refMap: Map<string, number | null>,
+): RevisionFacts {
+  const get = (market: string, selection: string) => result.priced.find((p) => p.market === market && p.selection === selection && p.line === null)?.prob ?? 0;
+  const xgpg = (ts?: TeamStats) => (ts && ts.played > 0 && ts.xg !== null ? ts.xg / ts.played : null);
+  const refName = f.referee ? f.referee.split(',')[0].trim() : null;
+  return {
+    home: f.home.name,
+    away: f.away.name,
+    league: f.league.name,
+    kickoff: new Intl.DateTimeFormat('es-US', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'America/New_York' }).format(new Date(f.kickoff)) + ' ET',
+    pickLabel: selectionLabel(pick.market, pick.selection, pick.line, { home: f.home.name, away: f.away.name, player: pick.player_name }, 'es'),
+    pickProb: pick.prob,
+    pickPrice: pick.best_price,
+    pickEdge: pick.edge,
+    selloModelo: pick.sello,
+    lambdaHome: result.lambda_home,
+    lambdaAway: result.lambda_away,
+    probHome: get('1x2', 'home'),
+    probDraw: get('1x2', 'draw'),
+    probAway: get('1x2', 'away'),
+    homeForm: tsHome?.form ?? '',
+    awayForm: tsAway?.form ?? '',
+    homePlayed: tsHome?.played ?? 0,
+    awayPlayed: tsAway?.played ?? 0,
+    homeXgPerGame: xgpg(tsHome),
+    awayXgPerGame: xgpg(tsAway),
+    homeMissing: injuries.filter((i) => i.team_id === f.home_id).map((i) => i.player_name ?? '').filter(Boolean).slice(0, 6),
+    awayMissing: injuries.filter((i) => i.team_id === f.away_id).map((i) => i.player_name ?? '').filter(Boolean).slice(0, 6),
+    bookmakers,
+    referee: refName,
+    refereeCards: refName ? refMap.get(refName) ?? null : null,
   };
 }
 

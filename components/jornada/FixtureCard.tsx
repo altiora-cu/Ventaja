@@ -39,6 +39,8 @@ export async function FixtureCard({ fixture: f, lock, timeZone }: { fixture: Fix
   const locked = lock !== 'none';
   const href = locked ? (lock === 'login' ? '/login?next=' + encodeURIComponent(`/partido/${f.id}`) : '/activar') : `/partido/${f.id}`;
   const top = f.analysis?.top_market ?? null;
+  const review = f.analysis?.ai_review ?? null;
+  const selloFinal = review?.sello_final ?? top?.sello ?? null;
   const finished = isFinished(f.status);
   const live = isLive(f.status);
 
@@ -49,7 +51,12 @@ export async function FixtureCard({ fixture: f, lock, timeZone }: { fixture: Fix
           <span className="num">
             {finished ? t('finished') : live ? <span className="text-ventaja">{t('live')}</span> : fmtTime(f.kickoff, locale, timeZone)}
           </span>
-          {top && !locked && <Sello nivel={top.sello} animate={false} />}
+          {top && selloFinal && !locked && (
+            <span className="inline-flex items-center gap-2">
+              {review && review.verdict !== 'concuerda' && <span className="text-[11px] text-[var(--warning)]">{t(review.verdict === 'cautela' ? 'aiCaution' : 'aiDisagree')}</span>}
+              <Sello nivel={selloFinal} animate={false} />
+            </span>
+          )}
           {locked && (
             <span className="inline-flex items-center gap-1 text-faint">
               <IconLock width={14} height={14} />
