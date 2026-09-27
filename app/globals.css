@@ -1,0 +1,241 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ==========================================================================
+   Ventaja — Design tokens (dirección A: Sala de análisis)
+   Una sola fuente de verdad. No cambiar paleta ni tipografías.
+   ========================================================================== */
+:root {
+  /* Superficies */
+  --bg: #0b0f14;
+  --bg-elevated: #111720;
+  --bg-hover: #161e29;
+  --border: #1f2933;
+  --border-strong: #2a3644;
+
+  /* Texto */
+  --text: #e8ecf1;
+  --text-muted: #8b96a5;
+  --text-faint: #55606e;
+
+  /* Marca */
+  --ventaja: #2ee59d;
+  --ventaja-dim: #1a7a57;
+  --ventaja-bg: rgba(46, 229, 157, 0.1);
+
+  /* Sello de Confianza */
+  --sello-alta: #2ee59d;
+  --sello-media: #f5b841;
+  --sello-baja: #8b96a5; /* gris, nunca rojo */
+  --sello-media-bg: rgba(245, 184, 65, 0.1);
+  --sello-baja-bg: rgba(139, 150, 165, 0.1);
+
+  /* Resultados en Historial */
+  --acierto: #2ee59d;
+  --fallo: #e5484d;
+  --nulo: #8b96a5;
+
+  /* Semántico */
+  --warning: #f5b841;
+  --warning-bg: rgba(245, 184, 65, 0.12);
+
+  /* Radios */
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 20px;
+
+  --ease-ventaja: cubic-bezier(0.22, 1, 0.36, 1);
+
+  color-scheme: dark;
+}
+
+html {
+  background: var(--bg);
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-ui), system-ui, sans-serif;
+  font-feature-settings: 'ss01', 'cv11';
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  min-height: 100dvh;
+}
+
+/* Cifras: JetBrains Mono con tabular-nums, no bailan al actualizar */
+.num,
+.font-mono {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+h1, h2, h3, h4 {
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+
+/* Focus visible: anillo 2px --ventaja con offset 2px */
+:focus-visible {
+  outline: 2px solid var(--ventaja);
+  outline-offset: 2px;
+  border-radius: var(--r-sm);
+}
+
+::selection {
+  background: var(--ventaja-dim);
+  color: var(--text);
+}
+
+/* Scrollbars discretos */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Tarjeta base: separación por borde, nunca sombra */
+.card {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+}
+.card-interactive {
+  transition: background-color 160ms ease, border-color 160ms ease;
+}
+.card-interactive:hover {
+  background: var(--bg-hover);
+  border-color: var(--border-strong);
+}
+
+/* Chips */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--border);
+  background: var(--bg-elevated);
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  font-weight: 500;
+  white-space: nowrap;
+  transition: background-color 120ms ease, color 120ms ease, border-color 120ms ease;
+}
+.chip:hover { background: var(--bg-hover); color: var(--text); }
+.chip[data-active='true'] {
+  border-color: var(--ventaja-dim);
+  background: var(--ventaja-bg);
+  color: var(--ventaja);
+}
+
+/* Botones */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 20px;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 0.9375rem;
+  transition: background-color 120ms ease, color 120ms ease, border-color 120ms ease, opacity 120ms ease;
+  white-space: nowrap;
+}
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-primary { background: var(--ventaja); color: #06110c; }
+.btn-primary:hover:not(:disabled) { background: #4aeeae; }
+.btn-secondary {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border-strong);
+}
+.btn-secondary:hover:not(:disabled) { background: var(--bg-hover); }
+.btn-ghost { background: transparent; color: var(--text-muted); }
+.btn-ghost:hover:not(:disabled) { color: var(--text); background: var(--bg-hover); }
+.btn-sm { height: 36px; padding: 0 14px; font-size: 0.875rem; }
+
+/* Inputs */
+.input {
+  width: 100%;
+  height: 44px;
+  padding: 0 14px;
+  border-radius: 10px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-size: 1rem;
+  transition: border-color 120ms ease;
+}
+.input::placeholder { color: var(--text-faint); }
+.input:focus { border-color: var(--ventaja-dim); outline: none; }
+
+/* Skeleton */
+.skeleton {
+  border-radius: var(--r-sm);
+  animation: shimmer 1.4s ease-in-out infinite;
+  background: var(--bg-elevated);
+}
+
+/* Bloqueo para cuentas vencidas: borroso + candado */
+.locked {
+  filter: blur(6px);
+  user-select: none;
+  pointer-events: none;
+}
+
+/* Barra de forma W/D/L */
+.forma-chip {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+  background: var(--bg-hover);
+  border: 1px solid var(--border);
+  transition: background-color 120ms ease;
+}
+.forma-chip[data-r='W'] { color: var(--ventaja); border-color: var(--ventaja-dim); background: var(--ventaja-bg); }
+.forma-chip[data-r='L'] { color: var(--text-muted); background: var(--bg-elevated); }
+
+/* Tablas */
+.table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+.table th {
+  text-align: left;
+  font-weight: 500;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+}
+.table td { padding: 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.table tr:last-child td { border-bottom: none; }
+
+/* Safe area para la barra inferior iOS */
+.pb-nav { padding-bottom: calc(72px + env(safe-area-inset-bottom)); }
+@media (min-width: 1024px) { .pb-nav { padding-bottom: 48px; } }
+
+/* prefers-reduced-motion: todo pasa a 0ms */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
