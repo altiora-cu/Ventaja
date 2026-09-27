@@ -12,6 +12,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "seed:admin": "tsx scripts/seed-admin.ts",
+    "ingest:check": "NODE_OPTIONS=--conditions=react-server tsx scripts/check-ingest.ts",
     "icons": "tsx scripts/generate-icons.ts"
   },
   "dependencies": {

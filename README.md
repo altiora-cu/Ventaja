@@ -32,6 +32,7 @@ Stack: Next.js 14 (App Router) · TypeScript · Tailwind · Supabase (Auth, Post
 | `pnpm lint` | ESLint (next/core-web-vitals) |
 | `pnpm test` | Vitest: motor (3 partidos de referencia), estados de cuenta, liquidación, emparejado de cuotas, agregación |
 | `pnpm seed:admin` | Crea/actualiza el admin en Supabase Auth |
+| `pnpm ingest:check` | Corre la primera ingesta completa y reporta partidos, cuotas emparejadas y sellos (`--skip-run` solo reporta) |
 | `pnpm icons` | Regenera los PNG de la PWA desde el isotipo |
 
 ## Estructura
