@@ -89,6 +89,20 @@ pnpm seed:admin
 ```
 Salida esperada: `Usuario creado: christianmirabal82@gmail.com` y `Perfil admin listo`. Verifica en **Authentication → Users** (email confirmado) y en **Table Editor → profiles** (`role = admin`, `status = activa`, `paid_until = 2099-12-31`).
 
+### 6b. Sin terminal: crear el admin desde el panel de Supabase
+Si no vas a correr comandos en tu computadora, puedes crear el admin a mano:
+1. **Authentication → Users → Add user → Create new user**: email `christianmirabal82@gmail.com`, contraseña de 12+ caracteres, marca **Auto Confirm User** → *Create user*.
+2. El trigger crea el perfil solo. Ahora ve a **SQL Editor** y ejecuta:
+   ```sql
+   update public.profiles
+   set role = 'admin', status = 'activa', paid_until = '2099-12-31', trial_ends_at = '2099-12-31'
+   where email = 'christianmirabal82@gmail.com';
+   ```
+3. Listo: entra en la app con ese correo y verás **Admin** en el menú.
+
+### 6c. Sin terminal: cargar datos desde la app
+No hace falta `curl`. Una vez desplegado en Vercel (paso 8), entra como admin a `/admin` y pulsa **Actualizar partidos y cuotas**. Eso ejecuta calendario + cuotas + predicciones. Para la carga completa de estadísticas y jugadores, los crons lo hacen solos cada día (o dispara `/api/cron/stats` una vez desde el navegador: no funciona sin el secreto, así que ese sí requiere `curl` o esperar al cron).
+
 ## 7. Probar en local
 
 ```bash
@@ -122,6 +136,19 @@ pnpm dev
 - [ ] `/historial` abre sin login; `/picks` sin login redirige a `/login`.
 - [ ] Un usuario nuevo ve "Prueba gratis · quedan 31 días" en `/cuenta`.
 - [ ] Backups: Supabase Pro los hace diarios; en Free, exporta con `pg_dump` semanalmente.
+
+## Planes de datos: qué se puede hacer gratis y qué no
+
+| Servicio | Plan gratis | Sirve para Ventaja |
+|---|---|---|
+| API-Football | 100 llamadas/día y **solo temporadas 2021–2023** | **No** para partidos actuales. Sirve para probar el motor con datos viejos. El plan de pago empieza en la gama de ~20–40 USD/mes según llamadas/día (ver api-football.com/pricing). Es el único gasto obligatorio. |
+| The Odds API | 500 créditos/mes | **Sí** en modo económico: `ODDS_REGIONS=us`, `ODDS_MARKETS=h2h,totals`, `ODDS_EXTRA_MARKETS=false`, `ODDS_TTL_HOURS=24` (≈10 créditos/día). Sin hándicap ni BTTS con cuota hasta pasar a un plan de pago. |
+| Supabase | Free | Sí, hasta tener clientes pagando (pausa por inactividad). |
+| Vercel | Hobby | Sí para desplegar; los crons de menos de 1 día requieren Pro. Alternativa gratis: el botón de `/admin` una vez al día. |
+| Resend | Free | Sí (3.000 emails/mes). |
+| Anthropic | Pago por uso | Lecturas con Claude Haiku: < 2 USD/mes. Sin clave, la app usa la Lectura de respaldo (texto generado por reglas). |
+
+**Por qué no "buscar en Google" en lugar de pagar API-Football:** el modelo necesita datos estructurados y consistentes (xG, corners, tarjetas, alineaciones) partido a partido para que el Historial público sea verificable. Extraer eso de páginas web rompe cada vez que cambian el diseño, viola términos de uso de varios sitios y no se puede auditar. Una IA generativa sin esos datos "adivina" y la ventaja desaparece. La IA en Ventaja aporta valor encima de los datos (Lectura, contexto, alertas), no en lugar de ellos.
 
 ## Costos mensuales estimados
 

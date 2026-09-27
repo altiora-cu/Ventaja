@@ -22,7 +22,7 @@ export const TTL = {
   players: 20 * 3600_000,
   injuries: 6 * 3600_000,
   lineups: 30 * 60_000,
-  odds: 2 * 3600_000,
-  oddsMatchDay: 15 * 60_000,
+  odds: (Number(process.env.ODDS_TTL_HOURS) || 2) * 3600_000,
+  oddsMatchDay: process.env.ODDS_TTL_HOURS ? (Number(process.env.ODDS_TTL_HOURS) || 2) * 3600_000 : 15 * 60_000,
   forever: 365 * 86_400_000,
 };
