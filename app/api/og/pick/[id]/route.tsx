@@ -25,7 +25,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
   }
   const fonts = await ogFonts();
   const pick = top ? selectionLabel(top.market, top.selection, top.line, { home: f.home.name, away: f.away.name, player: top.player_name }, 'es') : null;
-  const s = SELLO[top?.sello ?? 'baja'];
+  const s = SELLO[analysis?.ai_review?.sello_final ?? top?.sello ?? 'baja'];
   const kickoff = new Intl.DateTimeFormat('es-US', { weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', timeZone: 'America/New_York' }).format(new Date(f.kickoff));
   const pct = (p: number | null | undefined) => (p == null ? '—' : `${Math.round(p * 100)}%`);
 

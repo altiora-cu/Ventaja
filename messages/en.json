@@ -89,7 +89,9 @@
     "finished": "Final",
     "live": "Live",
     "postponed": "Postponed",
-    "matchesCount": "{count, plural, =1 {# match} other {# matches}}"
+    "matchesCount": "{count, plural, =1 {# match} other {# matches}}",
+    "aiCaution": "AI: caution",
+    "aiDisagree": "AI: disagrees"
   },
   "partido": {
     "title": "Match sheet",
@@ -125,7 +127,12 @@
     "topScorers": "Likely scorer",
     "playerShots": "Shots on target by player",
     "openAll": "Open all",
-    "kickoff": "Kickoff"
+    "kickoff": "Kickoff",
+    "aiReview": "AI review",
+    "aiVerdictLabel": "Verdict",
+    "aiRisks": "Risks found",
+    "aiSelloNote": "Model seal {modelo} → final seal {final}",
+    "aiDisclaimer": "The AI audits the model pick using form, absences and odds. It can only lower the seal, never raise it. It is not a prediction."
   },
   "markets": {
     "1x2": "Result (1X2)",
@@ -354,5 +361,10 @@
   },
   "og": {
     "footer": "Statistical analysis · 21+ · Play responsibly"
+  },
+  "aiVerdict": {
+    "concuerda": "Agrees",
+    "cautela": "Caution",
+    "discrepa": "Disagrees"
   }
 }

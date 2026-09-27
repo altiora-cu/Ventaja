@@ -5,7 +5,7 @@ import { addDays } from '@/lib/utils';
 import { activeLeagues } from './ingest';
 import { markFetched, shouldFetch, TTL } from './cache';
 import { matchFixturesToEvents } from './matching';
-import { normalizeEvent, oddsApi, oddsUsage } from './odds-api';
+import { EXTRA_MARKETS_ENABLED, normalizeEvent, oddsApi, oddsUsage } from './odds-api';
 
 export interface OddsReport {
   sports: number;
@@ -71,7 +71,7 @@ export async function ingestOdds(): Promise<OddsReport> {
 
         // Mercados extra (BTTS, 1T) solo el día del partido
         const fx = fxs.find((f) => f.id === fixtureId)!;
-        if (new Date(fx.kickoff) <= todayEnd) {
+        if (EXTRA_MARKETS_ENABLED && new Date(fx.kickoff) <= todayEnd) {
           const eKey = `odds-extra:${ev.id}`;
           if (await shouldFetch(admin, eKey, TTL.odds)) {
             try {

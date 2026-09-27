@@ -192,13 +192,29 @@ export interface TopMarket {
   sello: Sello;
 }
 
+export type AiVerdict = 'concuerda' | 'cautela' | 'discrepa';
+
+/** Revisión IA del pick principal: audita el pick del modelo y solo puede bajar el sello. */
+export interface AiReview {
+  verdict: AiVerdict;
+  risks: string[];
+  note: string;
+  sello_modelo: Sello;
+  sello_final: Sello;
+  model: string;
+  key: string;
+  at: string;
+}
+
 export interface FixtureAnalysis {
   fixture_id: number;
   lambda_home: number | null;
   lambda_away: number | null;
   scores: Array<{ home: number; away: number; prob: number }> | null;
   lectura: string | null;
+  lectura_en: string | null;
   lectura_locale: string | null;
+  ai_review: AiReview | null;
   lectura_sello: string | null;
   top_market: TopMarket | null;
   calculated_at: string;

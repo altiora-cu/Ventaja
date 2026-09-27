@@ -58,9 +58,15 @@ async function get<T>(path: string, params: Record<string, string>): Promise<T> 
   return (await res.json()) as T;
 }
 
+/**
+ * Coste por llamada = regiones × mercados (créditos de The Odds API).
+ * Modo económico (plan gratis, 500 créditos/mes): ODDS_REGIONS=us, ODDS_MARKETS=h2h,totals,
+ * ODDS_EXTRA_MARKETS=false y ODDS_TTL_HOURS=24 → ~10 créditos/día para 5 ligas.
+ */
 export const ODDS_REGIONS = process.env.ODDS_REGIONS ?? 'us,eu';
-export const MAIN_MARKETS = 'h2h,totals,spreads';
+export const MAIN_MARKETS = process.env.ODDS_MARKETS ?? 'h2h,totals,spreads';
 export const EXTRA_MARKETS = 'btts,h2h_h1,totals_h1';
+export const EXTRA_MARKETS_ENABLED = process.env.ODDS_EXTRA_MARKETS !== 'false';
 
 export const oddsApi = {
   /** Cuotas principales de todos los eventos próximos del deporte (coste: regiones × mercados). */

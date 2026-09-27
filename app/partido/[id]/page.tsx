@@ -10,6 +10,7 @@ import { FormaBlock } from '@/components/partido/FormaBlock';
 import { Comparador } from '@/components/partido/Comparador';
 import { TeamHistory } from '@/components/partido/TeamHistory';
 import { ShareButton } from '@/components/partido/ShareButton';
+import { RevisionIA } from '@/components/partido/RevisionIA';
 import { getFixtureDetail } from '@/lib/data/queries';
 import { isFinished } from '@/lib/data/statuses';
 import { getTimeZone } from '@/lib/tz';
@@ -33,8 +34,10 @@ export default async function PartidoPage({ params }: { params: { id: string } }
   if (!detail) notFound();
   const timeZone = getTimeZone();
   const { fixture: f, analysis, predictions, odds, injuries, homeStats, awayStats, referee, teamHistory } = detail;
-  const lectura = (locale === 'en' ? (analysis as (typeof analysis & { lectura_en?: string | null }) | null)?.lectura_en : analysis?.lectura) ?? analysis?.lectura ?? null;
+  const lectura = (locale === 'en' ? analysis?.lectura_en : analysis?.lectura) ?? analysis?.lectura ?? null;
   const top = analysis?.top_market ?? null;
+  const review = analysis?.ai_review ?? null;
+  const selloMostrado = review?.sello_final ?? top?.sello ?? null;
   const finished = isFinished(f.status);
   const missing = (teamId: number) => injuries.filter((i) => i.team_id === teamId);
 
@@ -86,9 +89,9 @@ export default async function PartidoPage({ params }: { params: { id: string } }
             </span>
           )}
         </div>
-        {top && (
+        {top && selloMostrado && (
           <div className="mt-4 flex items-center justify-between gap-3 border-t border-border pt-4">
-            <Sello nivel={top.sello} />
+            <Sello nivel={selloMostrado} />
             <ShareButton fixtureId={f.id} title={`${f.home.name} vs ${f.away.name}`} />
           </div>
         )}
@@ -100,6 +103,8 @@ export default async function PartidoPage({ params }: { params: { id: string } }
           <p className="mt-2 max-w-lectura text-base leading-relaxed">{lectura ?? <span className="text-muted">{t('lecturaPending')}</span>}</p>
         </section>
       </FadeIn>
+
+      {review && <RevisionIA review={review} />}
 
       {analysis?.scores && <Marcador scores={analysis.scores} home={f.home.name} away={f.away.name} />}
 
