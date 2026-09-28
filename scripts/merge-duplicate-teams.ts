@@ -3,7 +3,12 @@
  * y los fusiona: reasigna fixtures y team_stats al equipo canónico, crea el alias y borra el duplicado.
  *
  * Uso: pnpm teams:dedupe            (solo muestra qué haría)
- *      pnpm teams:dedupe --apply    (ejecuta)
+ *      pnpm teams:dedupe --apply    (ejecuta todas las propuestas)
+ *      pnpm teams:dedupe --apply --only=10000049:10000136,10000050:10000138
+ *                                   (ejecuta solo los pares duplicado:canónico indicados)
+ *
+ * La similitud por nombre propone fusiones entre clubes distintos (ej. "Independiente" e
+ * "Independiente Medellín"). Revisa la lista y usa --only para aplicar solo las correctas.
  */
 import { config as loadEnv } from 'dotenv';
 
@@ -17,8 +22,21 @@ interface TeamRow {
   source: string | null;
 }
 
+const ONLY_FLAG = '--only=';
+
+/** Pares "duplicado:canónico" de --only, o null si no se pasó la opción. */
+function parseOnly(argv: string[]): Set<string> | null {
+  const arg = argv.find((a) => a.startsWith(ONLY_FLAG));
+  if (!arg) return null;
+  const pairs = arg.slice(ONLY_FLAG.length).split(',').map((p) => p.trim()).filter(Boolean);
+  const invalid = pairs.filter((p) => !/^\d+:\d+$/.test(p));
+  if (invalid.length) throw new Error(`--only espera pares duplicado:canónico; inválidos: ${invalid.join(', ')}`);
+  return new Set(pairs);
+}
+
 async function main() {
   const apply = process.argv.includes('--apply');
+  const only = parseOnly(process.argv);
   const { createAdminClient } = await import('@/lib/supabase/admin');
   const { normalizeName, nameSimilarity } = await import('@/lib/data/matching');
   const admin = createAdminClient();
@@ -51,6 +69,14 @@ async function main() {
       }
     }
   }
+
+  const selected = only ? pairs.filter((p) => only.has(`${p.drop.id}:${p.keep.id}`)) : pairs;
+  if (only) {
+    const proposed = new Set(pairs.map((p) => `${p.drop.id}:${p.keep.id}`));
+    const unknown = [...only].filter((k) => !proposed.has(k));
+    if (unknown.length) throw new Error(`Pares de --only que no están entre las propuestas: ${unknown.join(', ')}`);
+  }
+  pairs.splice(0, pairs.length, ...selected);
 
   if (!pairs.length) {
     console.log('Sin duplicados.');
