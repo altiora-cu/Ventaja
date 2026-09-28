@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { settleOutcome, unitsFor } from './settle-rules';
+import { isVoidFixture, settleOutcome, unitsFor, VOID_GRACE_HOURS } from './settle-rules';
 import type { Fixture } from '@/lib/db/types';
 
 const f: Fixture = {
@@ -51,5 +51,25 @@ describe('settleOutcome', () => {
     expect(unitsFor('acierto', 1.72)).toBeCloseTo(0.72);
     expect(unitsFor('fallo', 1.72)).toBe(-1);
     expect(unitsFor('nulo', 1.72)).toBe(0);
+  });
+});
+
+describe('isVoidFixture', () => {
+  const kickoff = '2026-09-20T18:00:00Z';
+  const hoursAfter = (h: number) => new Date(new Date(kickoff).getTime() + h * 3_600_000);
+
+  it('anula de inmediato un partido cancelado o abandonado', () => {
+    expect(isVoidFixture({ status: 'CANC', kickoff }, hoursAfter(1))).toBe(true);
+    expect(isVoidFixture({ status: 'ABD', kickoff }, hoursAfter(1))).toBe(true);
+  });
+
+  it('espera el plazo de gracia antes de anular un partido aplazado', () => {
+    expect(isVoidFixture({ status: 'PST', kickoff }, hoursAfter(VOID_GRACE_HOURS - 1))).toBe(false);
+    expect(isVoidFixture({ status: 'PST', kickoff }, hoursAfter(VOID_GRACE_HOURS + 1))).toBe(true);
+  });
+
+  it('no anula partidos terminados ni por jugar', () => {
+    expect(isVoidFixture({ status: 'FT', kickoff }, hoursAfter(100))).toBe(false);
+    expect(isVoidFixture({ status: 'NS', kickoff }, hoursAfter(100))).toBe(false);
   });
 });

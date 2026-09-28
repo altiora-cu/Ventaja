@@ -4,6 +4,7 @@ import { ingestFixtures, ingestLineups, ingestStats } from '@/lib/data/ingest';
 import { ingestOdds } from '@/lib/data/odds-ingest';
 import { runPredictions } from '@/lib/data/predict';
 import { settlePicks } from '@/lib/data/settle';
+import { registerSystemCombos, settleUserPlays } from '@/lib/data/settle-user';
 import { runAccounts } from '@/lib/data/accounts';
 
 export const runtime = 'nodejs';
@@ -12,7 +13,7 @@ export const maxDuration = 300;
 
 /**
  * Cron diario único (plan Hobby de Vercel): calendario + resultados → estadísticas → cuotas →
- * predicciones y Lecturas → cierre de picks → cuentas y recordatorios.
+ * predicciones y Lecturas → registro de combinadas → cierre de picks, jugadas y combinadas → cuentas y recordatorios.
  * Cada paso captura su propio error para que un fallo no impida los siguientes.
  */
 export async function GET(request: NextRequest) {
@@ -32,7 +33,9 @@ export async function GET(request: NextRequest) {
     await step('odds', ingestOdds);
     await step('lineups', ingestLineups);
     await step('predict', () => runPredictions());
+    await step('combos', () => registerSystemCombos());
     await step('settle', settlePicks);
+    await step('settleUser', settleUserPlays);
     await step('accounts', () => runAccounts());
     return out;
   });

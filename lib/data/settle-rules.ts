@@ -1,5 +1,21 @@
 import type { Fixture, PickResult } from '@/lib/db/types';
 
+/** Estados en los que el partido no se jugará: la jugada se devuelve. */
+const CANCELLED_STATUSES = new Set(['CANC', 'ABD', 'AWD', 'WO']);
+/** Estados que pueden reprogramarse: solo se anulan pasado el plazo de gracia. */
+const DELAYED_STATUSES = new Set(['PST', 'SUSP']);
+export const VOID_GRACE_HOURS = 48;
+
+/**
+ * true si una jugada sobre este partido debe cerrarse como nula: partido cancelado, o aplazado
+ * sin jugarse en las 48 h siguientes a su hora original (criterio habitual de las casas).
+ */
+export function isVoidFixture(f: Pick<Fixture, 'status' | 'kickoff'>, now: Date = new Date()): boolean {
+  if (CANCELLED_STATUSES.has(f.status)) return true;
+  if (!DELAYED_STATUSES.has(f.status)) return false;
+  return now.getTime() - new Date(f.kickoff).getTime() > VOID_GRACE_HOURS * 3_600_000;
+}
+
 export interface SettleInput {
   market: string;
   selection: string;

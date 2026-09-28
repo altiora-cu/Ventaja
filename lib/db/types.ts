@@ -254,3 +254,69 @@ export interface FixtureFull extends Fixture {
   home: Team;
   away: Team;
 }
+
+export type ComboKindDb = 'segura' | 'equilibrada' | 'ambiciosa';
+export type UserComboKind = ComboKindDb | 'propia';
+
+/** Selección guardada dentro de una combinada del sistema (jsonb). */
+export interface SystemComboSelection {
+  fixture_id: number;
+  market: string;
+  selection: string;
+  line: number | null;
+  player_id: number | null;
+  player_name: string | null;
+  prob: number;
+  price: number;
+  sello: Sello;
+  home: string;
+  away: string;
+  league: string;
+  kickoff: string;
+  /** null mientras el partido no tenga resultado. */
+  result: PickResult | null;
+}
+
+export interface SystemCombo {
+  id: number;
+  date_key: string;
+  kind: ComboKindDb;
+  selections: SystemComboSelection[];
+  joint_prob: number;
+  total_price: number;
+  result: PickResult | null;
+  units: number;
+  created_at: string;
+  settled_at: string | null;
+}
+
+export interface UserCombo {
+  id: number;
+  user_id: string;
+  kind: UserComboKind;
+  joint_prob: number;
+  total_price: number | null;
+  result: PickResult | null;
+  units: number;
+  created_at: string;
+  settled_at: string | null;
+}
+
+export interface UserPick {
+  id: number;
+  user_id: string;
+  combo_id: number | null;
+  fixture_id: number;
+  market: string;
+  selection: string;
+  line: number | null;
+  player_id: number | null;
+  player_name: string | null;
+  prob: number;
+  price: number | null;
+  sello: Sello;
+  result: PickResult | null;
+  units: number;
+  created_at: string;
+  settled_at: string | null;
+}
