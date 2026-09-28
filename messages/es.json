@@ -315,7 +315,9 @@
     "fixtureId": "ID del partido",
     "homeGoals": "Goles local",
     "awayGoals": "Goles visita",
-    "scoreSaved": "Marcador guardado y picks cerrados."
+    "scoreSaved": "Marcador guardado y picks cerrados.",
+    "staleResults": "{count, plural, =1 {# partido} other {# partidos}} con más de 3 días sin marcador",
+    "staleResultsHint": "The Odds API solo devuelve resultados de 3 días atrás. Carga el marcador a mano con el formulario de abajo (usa el # del partido) para cerrar sus picks."
   },
   "auth": {
     "loginTitle": "Entra a tu sala de análisis",
