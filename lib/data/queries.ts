@@ -2,8 +2,9 @@ import 'server-only';
 import { cache } from 'react';
 import { createClient } from '@/lib/supabase/server';
 import { hasSupabaseEnv } from '@/lib/supabase/admin';
-import type { FixtureAnalysis, FixtureFull, Injury, League, Odd, PickHistory, Prediction, Profile, Team, TeamStats } from '@/lib/db/types';
-import { qualifiesAsPick } from '@/lib/engine/edge';
+import type { AiPlayReview, FixtureAnalysis, FixtureFull, Injury, League, Odd, PickHistory, Prediction, Profile, Team, TeamStats } from '@/lib/db/types';
+import { qualifiesAsPick, selectionKey } from '@/lib/engine/edge';
+import { verdictsByKey } from '@/lib/engine/plays-review';
 import { FINISHED_STATUSES } from './statuses';
 import { DEFAULT_TZ, zonedStartOfDay } from '@/lib/tz';
 
@@ -141,6 +142,8 @@ export const getFixtureDetail = cache(async (id: number): Promise<FixtureDetail 
 
 export interface PickCandidate extends Prediction {
   fixture: FixtureFull;
+  /** Revisión IA de esta jugada; null si aún no se generó. */
+  ai: AiPlayReview | null;
 }
 
 /** Selecciones del día que cumplen el umbral (ventaja ≥ 5%, prob ≥ 55%), ordenadas por ventaja. */
@@ -158,7 +161,11 @@ export const getPickCandidates = cache(async (dateKey: string, timeZone = DEFAUL
     .gte('prob', 0.55)
     .order('edge', { ascending: false })
     .returns<Prediction[]>();
-  return (preds ?? []).filter((p) => qualifiesAsPick({ prob: Number(p.prob), edge: p.edge === null ? null : Number(p.edge) })).map((p) => ({ ...p, fixture: fMap.get(p.fixture_id)! }));
+  const { data: analyses } = await db().from('fixture_analysis').select('fixture_id,ai_review').in('fixture_id', fixtures.map((f) => f.id)).returns<Array<Pick<FixtureAnalysis, 'fixture_id' | 'ai_review'>>>();
+  const reviews = new Map((analyses ?? []).map((a) => [a.fixture_id, verdictsByKey(a.ai_review?.plays)]));
+  return (preds ?? [])
+    .filter((p) => qualifiesAsPick({ prob: Number(p.prob), edge: p.edge === null ? null : Number(p.edge) }))
+    .map((p) => ({ ...p, fixture: fMap.get(p.fixture_id)!, ai: reviews.get(p.fixture_id)?.get(selectionKey(p.market, p.selection, p.line === null ? null : Number(p.line), p.player_id)) ?? null }));
 });
 
 export interface SearchResult extends FixtureFull {
@@ -270,7 +277,14 @@ export const getHistorial = cache(async (limit = 200): Promise<HistorialData> =>
     return { date, units: Math.round(acc * 100) / 100 };
   });
 
-  const { count: pending } = await db().from('predictions').select('fixture_id', { count: 'exact', head: true }).in('sello', ['alta', 'media']);
+  // Solo cuentan como pendientes los picks de partidos que aún no empiezan: las predicciones de
+  // partidos ya jugados siguen en la tabla después de cerrarse.
+  const { count: pending } = await db()
+    .from('predictions')
+    .select('fixture_id,fixture:fixtures!inner(status)', { count: 'exact', head: true })
+    .in('sello', ['alta', 'media'])
+    .in('fixture.status', ['NS', 'TBD'])
+    .gt('fixture.kickoff', new Date().toISOString());
 
   return {
     picks: all,
