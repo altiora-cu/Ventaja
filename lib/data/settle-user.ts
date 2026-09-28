@@ -171,7 +171,8 @@ export async function registerSystemCombos(dateKey = toDateKey(new Date(), DEFAU
   if (predErr) throw predErr;
 
   // Las jugadas que la Revisión IA contradice no entran en las combinadas.
-  const { data: analyses } = await admin.from('fixture_analysis').select('fixture_id,ai_review').in('fixture_id', fixtures.map((f) => f.id)).returns<Array<Pick<FixtureAnalysis, 'fixture_id' | 'ai_review'>>>();
+  const { data: analyses, error: analysisErr } = await admin.from('fixture_analysis').select('fixture_id,ai_review').in('fixture_id', fixtures.map((f) => f.id)).returns<Array<Pick<FixtureAnalysis, 'fixture_id' | 'ai_review'>>>();
+  if (analysisErr) throw analysisErr;
   const rejected = new Set((analyses ?? []).flatMap((a) => (a.ai_review?.plays ?? []).filter((r) => r.verdict === 'discrepa').map((r) => `${a.fixture_id}|${r.key}`)));
   const accepted = (preds ?? []).filter((p) => !rejected.has(`${p.fixture_id}|${selectionKey(p.market, p.selection, p.line === null ? null : Number(p.line), p.player_id)}`));
 

@@ -10,6 +10,7 @@ import { revisarJugadas, revisarPick, revisionEnabled } from '@/lib/engine/revis
 import { revisionKey, type RevisionFacts } from '@/lib/engine/revision-prompt';
 import type { LecturaFacts } from '@/lib/engine/lectura-prompt';
 import { selectionLabel } from '@/lib/labels';
+import { DEFAULT_TZ, zonedStartOfDay } from '@/lib/tz';
 import { addDays, toDateKey } from '@/lib/utils';
 import { computeLeagueAverages, LEAGUE_DEFAULTS } from './aggregate';
 import { activeLeagues } from './ingest';
@@ -26,6 +27,7 @@ export interface PredictReport {
 
 /** Máximo de revisiones IA por corrida (control de coste). */
 const AI_REVIEW_MAX = Number(process.env.AI_REVIEW_MAX) || 40;
+const DAY_MS = 24 * 3600_000;
 
 type FixtureRow = Fixture & { home: Team; away: Team; league: League };
 
@@ -58,8 +60,8 @@ export async function runPredictions(dateKey?: string): Promise<PredictReport> {
   const leagues = await activeLeagues(admin);
 
   const now = new Date();
-  const from = dateKey ? new Date(`${dateKey}T00:00:00-04:00`) : new Date(now.getTime() - 2 * 3600_000);
-  const to = dateKey ? new Date(`${dateKey}T23:59:59-04:00`) : addDays(now, 3);
+  const from = dateKey ? zonedStartOfDay(dateKey, DEFAULT_TZ) : new Date(now.getTime() - 2 * 3600_000);
+  const to = dateKey ? new Date(from.getTime() + DAY_MS - 1000) : addDays(now, 3);
 
   const { data: fixtures, error } = await admin
     .from('fixtures')
@@ -198,7 +200,8 @@ export async function runPredictions(dateKey?: string): Promise<PredictReport> {
           if (aiReview.plays_key !== pKey && report.revisiones < AI_REVIEW_MAX) {
             const reviewed = await revisarJugadas(rfacts, plays);
             if (reviewed) {
-              aiReview = { ...aiReview, plays: reviewed, plays_key: pKey };
+              // La clave solo se guarda con la revisión completa: si faltó alguna jugada, se reintenta en la próxima corrida.
+              aiReview = { ...aiReview, plays: reviewed, plays_key: reviewed.length === plays.length ? pKey : undefined };
               report.revisiones++;
               report.jugadasRevisadas += reviewed.length;
             }
