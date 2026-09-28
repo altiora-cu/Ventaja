@@ -2,6 +2,8 @@ import { ImageResponse } from 'next/og';
 import { OG_COLORS as C, ogFonts } from '@/lib/og/fonts';
 
 export const runtime = 'nodejs';
+// Se genera por petición, igual que /api/og/pick: evita descargar fuentes y cargar @vercel/og durante el build.
+export const dynamic = 'force-dynamic';
 export const alt = 'Ventaja — Tu ventaja antes del pitazo';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
