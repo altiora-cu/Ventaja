@@ -1,10 +1,12 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useTransition } from 'react';
+import { saveCombo } from '@/app/actions/jugadas';
+import { MarkButton } from '@/components/jugadas/MarkButton';
 import { Sello } from '@/components/ui/Sello';
 import { StaggerItem, StaggerList } from '@/components/ui/Motion';
-import { IconCopy, IconCheck } from '@/components/ui/Icons';
+import { IconBookmark, IconCopy, IconCheck } from '@/components/ui/Icons';
 import { buildCombos, COMBO_RULES, type ComboKind, type ComboSelection } from '@/lib/engine/combos';
 import type { Sello as SelloNivel } from '@/lib/db/types';
 import { selectionLabel } from '@/lib/labels';
@@ -19,6 +21,8 @@ export interface PickRow extends ComboSelection {
   home: string;
   away: string;
   kickoff: string;
+  /** El partido ya empezó: la jugada se muestra pero no se puede marcar ni combinar. */
+  started: boolean;
 }
 
 interface Props {
@@ -26,6 +30,23 @@ interface Props {
   leagues: Array<{ id: number; name: string }>;
   locale: Locale;
   dateLabel: string;
+  markedIds: number[];
+}
+
+/** Guarda combinadas en "Mis jugadas" y recuerda cuáles ya se guardaron en esta visita. */
+function useSaveCombo() {
+  const [saved, setSaved] = useState<ReadonlySet<ComboKind>>(new Set());
+  const [error, setError] = useState<{ kind: ComboKind; message: string } | null>(null);
+  const [pending, startTransition] = useTransition();
+  const save = (kind: ComboKind, predictionIds: number[]) => {
+    setError(null);
+    startTransition(async () => {
+      const res = await saveCombo(predictionIds, kind);
+      if (res.ok) setSaved((prev) => new Set([...prev, kind]));
+      else setError({ kind, message: res.error ?? '' });
+    });
+  };
+  return { saved, error, pending, save };
 }
 
 function useCopy() {
@@ -42,7 +63,7 @@ function useCopy() {
   return { copied, copy };
 }
 
-export function PicksView({ rows, leagues, locale, dateLabel }: Props) {
+export function PicksView({ rows, leagues, locale, dateLabel, markedIds }: Props) {
   const t = useTranslations('picks');
   const tc = useTranslations('common');
   const ts = useTranslations('sello');
@@ -50,12 +71,14 @@ export function PicksView({ rows, leagues, locale, dateLabel }: Props) {
   const [sello, setSello] = useState<SelloNivel | 'all'>('all');
   const [league, setLeague] = useState<number | 'all'>('all');
   const { copied, copy } = useCopy();
+  const comboSaver = useSaveCombo();
+  const marked = useMemo(() => new Set(markedIds), [markedIds]);
 
   const singles = useMemo(
     () => rows.filter((r) => (sello === 'all' || r.sello === sello) && (league === 'all' || r.league_id === league)).sort((a, b) => b.edge - a.edge),
     [rows, sello, league],
   );
-  const combos = useMemo(() => buildCombos(rows), [rows]);
+  const combos = useMemo(() => buildCombos(rows.filter((r) => !r.started)), [rows]);
   const label = (r: PickRow) => selectionLabel(r.market, r.selection, r.line, { home: r.home, away: r.away, player: r.player_name }, locale);
   const clip = (lines: string[]) => [t('clipboardHeader', { date: dateLabel }), ...lines, '', t('clipboardFooter')].join('\n');
 
@@ -127,10 +150,13 @@ export function PicksView({ rows, leagues, locale, dateLabel }: Props) {
                           <p className="num text-lg text-ventaja">{signedPct(r.edge)}</p>
                         </div>
                       </div>
-                      <button type="button" className="btn btn-secondary btn-sm" onClick={() => copy(key, text)}>
-                        {copied === key ? <IconCheck width={16} height={16} /> : <IconCopy width={16} height={16} />}
-                        {copied === key ? tc('copied') : t('copyPlay')}
-                      </button>
+                      <div className="flex flex-wrap items-start justify-end gap-2">
+                        <MarkButton predictionId={r.id} initialMarked={marked.has(r.id)} locked={r.started} />
+                        <button type="button" className="btn btn-secondary btn-sm" onClick={() => copy(key, text)}>
+                          {copied === key ? <IconCheck width={16} height={16} /> : <IconCopy width={16} height={16} />}
+                          {copied === key ? tc('copied') : t('copyPlay')}
+                        </button>
+                      </div>
                     </div>
                   </StaggerItem>
                 );
@@ -146,6 +172,7 @@ export function PicksView({ rows, leagues, locale, dateLabel }: Props) {
             const combo = combos[kind];
             const key = `c-${kind}`;
             const sels = (combo?.selections ?? []) as PickRow[];
+            const isSaved = comboSaver.saved.has(kind);
             const text = combo ? clip([`${t(`combo.${kind}`)} · ${t('jointProb')} ${pct(combo.jointProb)} · ${t('totalOdds')} ${combo.totalPrice.toFixed(2)}`, ...sels.map((s) => `• ${s.home} vs ${s.away}: ${label(s)} @ ${odds(s.price)}`)]) : '';
             return (
               <StaggerItem key={kind} className="card flex flex-col p-4">
@@ -189,6 +216,15 @@ export function PicksView({ rows, leagues, locale, dateLabel }: Props) {
                         {copied === key ? tc('copied') : t('copyPlay')}
                       </button>
                     </div>
+                    <button type="button" className="btn btn-primary btn-sm mt-3 w-full" disabled={comboSaver.pending || isSaved} onClick={() => comboSaver.save(kind, sels.map((s) => s.id))}>
+                      {isSaved ? <IconCheck width={16} height={16} /> : <IconBookmark width={16} height={16} />}
+                      {isSaved ? t('comboSaved') : t('saveCombo')}
+                    </button>
+                    {comboSaver.error?.kind === kind && (
+                      <p role="alert" className="mt-2 text-xs text-fallo">
+                        {comboSaver.error.message || tc('errorGeneric')}
+                      </p>
+                    )}
                   </>
                 )}
               </StaggerItem>

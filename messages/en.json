@@ -61,7 +61,8 @@
     "admin": "Admin",
     "login": "Log in",
     "register": "Create account",
-    "logout": "Log out"
+    "logout": "Log out",
+    "misJugadas": "My plays"
   },
   "sello": {
     "label": "Confidence Seal",
@@ -134,7 +135,17 @@
     "aiRisks": "Risks found",
     "aiSelloNote": "Model seal {modelo} → final seal {final}",
     "aiDisclaimer": "The AI audits the model pick using form, absences and odds. It can only lower the seal, never raise it. It is not a prediction.",
-    "smallSample": "Small sample: one of the teams has fewer than 5 matches with data. Probability is blended with market odds until the sample fills in."
+    "smallSample": "Small sample: one of the teams has fewer than 5 matches with data. Probability is blended with market odds until the sample fills in.",
+    "viewAnalysis": "Full analysis",
+    "viewBest": "Best plays",
+    "viewLabel": "Match view",
+    "bestTitle": "Best plays for this match",
+    "bestHint": "Only plays with an edge over the odds, a probability of 60% or more and an available price. One per market, most likely first.",
+    "bestEmpty": "This match has no plays worth making: none combines enough edge and probability. Not forcing it is also an edge.",
+    "bestStarted": "The match has already started. These were the recommended plays before kickoff.",
+    "riskBajo": "Low risk",
+    "riskMedio": "Medium risk",
+    "missingMarkets": "No data for: {markets}. The current sources do not provide those stats, and the model would rather show nothing than make up a number."
   },
   "markets": {
     "1x2": "Result (1X2)",
@@ -152,12 +163,12 @@
     "scorer": "Likely scorer",
     "correct_score": "Correct score",
     "outcome": {
+      "12": "No draw",
       "home": "{team} to win",
       "away": "{team} to win",
       "draw": "Draw",
       "1X": "{team} or draw",
       "X2": "{team} or draw",
-      "12": "No draw",
       "over": "Over {line}",
       "under": "Under {line}",
       "yes": "Yes",
@@ -202,7 +213,9 @@
       "unavailable": "Not enough selections from different matches clear the threshold today."
     },
     "clipboardHeader": "Ventaja · {date}",
-    "clipboardFooter": "Statistical analysis. No guaranteed results. 21+."
+    "clipboardFooter": "Statistical analysis. No guaranteed results. 21+.",
+    "saveCombo": "Save parlay",
+    "comboSaved": "Saved"
   },
   "buscar": {
     "title": "Search",
@@ -220,7 +233,7 @@
   },
   "historial": {
     "title": "Track record",
-    "subtitle": "Every settled pick, with its result. Public and unfiltered.",
+    "subtitle": "Everything the system predicts is on record: closed picks, open picks and parlays. Public and unfiltered.",
     "hitRate": "Overall hit rate",
     "roi": "Simulated ROI",
     "roiHint": "1u stake at closing odds",
@@ -236,7 +249,21 @@
     "miss": "Miss",
     "void": "Void",
     "showing": "Showing the last {count}",
-    "pending": "{count} picks awaiting settlement"
+    "pending": "{count} picks awaiting settlement",
+    "tabsLabel": "History sections",
+    "tabClosed": "Closed picks",
+    "tabOpen": "Open",
+    "tabCombos": "Parlays",
+    "openHint": "Published picks whose match has not been played yet. Once it ends they move to \"Closed picks\" with their result.",
+    "openEmpty": "There are no open picks right now. They appear when odds for the upcoming matches arrive.",
+    "combosHint": "The parlays the system proposes each day are saved before kickoff and cannot be edited afterwards.",
+    "combosEmpty": "No parlays on record yet. They are saved every day there are enough picks from different matches.",
+    "combosHitRate": "Parlays won",
+    "combosClosed": "Closed parlays",
+    "combosPending": "Open parlays",
+    "kickoff": "Kickoff",
+    "lockedOpen": "{count, plural, =0 {There are no open picks right now.} =1 {There is # open pick.} other {There are # open picks.}} Details are shown with active access; once the match ends, each pick moves to this public history with its result.",
+    "lockedCombo": "Parlays that are still open are shown with active access. Once the last match ends, they move to this public record with their result."
   },
   "cuenta": {
     "title": "Account",
@@ -375,5 +402,32 @@
     "concuerda": "Agrees",
     "cautela": "Caution",
     "discrepa": "Disagrees"
+  },
+  "jugadas": {
+    "title": "My plays",
+    "subtitle": "The plays and parlays you marked, with their final result and your win rate.",
+    "winRate": "Win rate",
+    "winRateHint": "{hits} won out of {decided} settled",
+    "units": "Balance",
+    "unitsHint": "Units, staking 1u per play",
+    "pending": "Open",
+    "total": "Marked",
+    "singles": "Plays",
+    "combos": "Parlays",
+    "emptySingles": "You have not marked any plays yet. Open a match or Picks and press \"Mark\".",
+    "emptyCombos": "You have not saved any parlays yet. They are in Picks, Parlays tab.",
+    "mark": "Mark",
+    "marked": "Marked",
+    "markHint": "Save this play to My plays",
+    "unmarkHint": "Remove this play from My plays",
+    "remove": "Remove",
+    "locked": "Closed",
+    "statusPending": "Pending",
+    "statusAcierto": "Won",
+    "statusFallo": "Lost",
+    "statusNulo": "Void",
+    "kindPropia": "Own parlay",
+    "selections": "{count, plural, =1 {# selection} other {# selections}}",
+    "atMark": "when marked"
   }
 }

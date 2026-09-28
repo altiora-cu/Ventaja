@@ -1,5 +1,7 @@
 import { getLocale, getTranslations } from 'next-intl/server';
 import { PicksView, type PickRow } from '@/components/picks/PicksView';
+import { getViewer } from '@/lib/auth/viewer';
+import { getMarkedPredictionIds } from '@/lib/data/jugadas';
 import { getPickCandidates } from '@/lib/data/queries';
 import { getTimeZone } from '@/lib/tz';
 import { fmtDate, isDateKey, toDateKey } from '@/lib/utils';
@@ -11,7 +13,9 @@ export default async function PicksPage({ searchParams }: { searchParams: { fech
   const [t, locale] = await Promise.all([getTranslations('picks'), getLocale() as Promise<Locale>]);
   const timeZone = getTimeZone();
   const date = searchParams.fecha && isDateKey(searchParams.fecha) ? searchParams.fecha : toDateKey(new Date(), timeZone);
-  const cands = await getPickCandidates(date, timeZone);
+  const [cands, viewer] = await Promise.all([getPickCandidates(date, timeZone), getViewer()]);
+  const markedIds = await getMarkedPredictionIds(viewer.user?.id ?? null, cands);
+  const now = Date.now();
   const rows: PickRow[] = cands
     .filter((c) => c.best_price)
     .map((c) => ({
@@ -22,6 +26,7 @@ export default async function PicksPage({ searchParams }: { searchParams: { fech
       home: c.fixture.home.name,
       away: c.fixture.away.name,
       kickoff: c.fixture.kickoff,
+      started: new Date(c.fixture.kickoff).getTime() <= now,
       market: c.market,
       selection: c.selection,
       line: c.line === null ? null : Number(c.line),
@@ -38,7 +43,7 @@ export default async function PicksPage({ searchParams }: { searchParams: { fech
         <h1 className="text-xl font-semibold">{t('title')}</h1>
         <p className="mt-1 text-sm text-muted">{t('subtitle')}</p>
       </div>
-      <PicksView rows={rows} leagues={leagues} locale={locale} dateLabel={fmtDate(`${date}T12:00:00Z`, locale, { day: 'numeric', month: 'short' }, 'UTC')} />
+      <PicksView rows={rows} leagues={leagues} locale={locale} markedIds={markedIds} dateLabel={fmtDate(`${date}T12:00:00Z`, locale, { day: 'numeric', month: 'short' }, 'UTC')} />
     </div>
   );
 }
