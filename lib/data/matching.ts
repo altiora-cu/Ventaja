@@ -1,6 +1,9 @@
 /** Emparejar partidos de API-Football con eventos de The Odds API por nombre + hora. Funciones puras. */
 
-const STOP = new Set(['fc', 'cf', 'sc', 'ac', 'afc', 'cd', 'ca', 'club', 'de', 'del', 'la', 'el', 'los', 'las', 'the', 'deportivo', 'atletico', 'atlético', 'futbol', 'fútbol', 'football', 'and', 'y', 'united', 'utd']);
+/** Prefijos de club (CR Flamengo, SE Palmeiras) y sufijos de estado (Flamengo-RJ, Palmeiras-SP) de Brasil. */
+const BRAZIL_TOKENS = ['cr', 'se', 'ec', 'rb', 'af', 'fbpa', 'clube', 'do', 'da', 'rj', 'sp', 'mg', 'rs', 'pr', 'ba', 'ce', 'go', 'pe'];
+
+const STOP = new Set(['fc', 'cf', 'sc', 'ac', 'afc', 'cd', 'ca', 'club', 'de', 'del', 'la', 'el', 'los', 'las', 'the', 'deportivo', 'atletico', 'atlético', 'futbol', 'fútbol', 'football', 'and', 'y', 'united', 'utd', ...BRAZIL_TOKENS]);
 
 const ALIASES: Record<string, string> = {
   'america': 'club america',
