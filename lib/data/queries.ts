@@ -221,6 +221,23 @@ export async function searchFixtures(q: string): Promise<SearchResult[]> {
   return fixtures.map((f) => ({ ...f, analysis: aMap.get(f.id) ?? null, pick: pMap.get(f.id) ?? null }));
 }
 
+/**
+ * Picks en juego. Desde la migración 7 las predicciones de partidos por jugar solo se leen con acceso,
+ * así que el número sale de la función open_picks_count(), que no expone ninguna selección.
+ * Si la función aún no existe (migración sin aplicar), se cuenta con la consulta directa.
+ */
+async function countOpenPicks(): Promise<number> {
+  const { data, error } = await db().rpc('open_picks_count');
+  if (!error && typeof data === 'number') return data;
+  const { count } = await db()
+    .from('predictions')
+    .select('fixture_id,fixture:fixtures!inner(status)', { count: 'exact', head: true })
+    .in('sello', ['alta', 'media'])
+    .in('fixture.status', ['NS', 'TBD'])
+    .gt('fixture.kickoff', new Date().toISOString());
+  return count ?? 0;
+}
+
 export interface HistorialData {
   picks: Array<PickHistory & { fixture: FixtureFull }>;
   total: number;
@@ -279,17 +296,12 @@ export const getHistorial = cache(async (limit = 200): Promise<HistorialData> =>
 
   // Solo cuentan como pendientes los picks de partidos que aún no empiezan: las predicciones de
   // partidos ya jugados siguen en la tabla después de cerrarse.
-  const { count: pending } = await db()
-    .from('predictions')
-    .select('fixture_id,fixture:fixtures!inner(status)', { count: 'exact', head: true })
-    .in('sello', ['alta', 'media'])
-    .in('fixture.status', ['NS', 'TBD'])
-    .gt('fixture.kickoff', new Date().toISOString());
+  const pending = await countOpenPicks();
 
   return {
     picks: all,
     total: all.length,
-    pending: pending ?? 0,
+    pending,
     hitRate: staked ? hits / staked : null,
     roi: staked ? units / staked : null,
     streak: { kind: streakKind, count: streak },

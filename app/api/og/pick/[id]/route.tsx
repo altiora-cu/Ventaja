@@ -82,6 +82,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
         </div>
       </div>
     ),
-    { width: 1080, height: 1350, fonts, headers: { 'Cache-Control': 'public, max-age=900' } },
+    // La imagen de un partido por jugar depende de la sesión: no debe quedar en una caché compartida.
+    { width: 1080, height: 1350, fonts, headers: { 'Cache-Control': isFinished(f.status) ? 'public, max-age=900' : 'private, max-age=900' } },
   );
 }
