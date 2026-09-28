@@ -66,10 +66,10 @@ npx supabase db push                    # aplica supabase/migrations/0001, 0002 
 ```
 (Supabase no soporta `npm i -g supabase`; se usa `npx`.)
 
-Si las migraciones 0001 y 0002 ya se aplicaron a mano por el SQL Editor, márcalas como aplicadas antes del push para que solo entre la 0003:
+Si las migraciones ya se aplicaron a mano por el SQL Editor (0001 a 0004 en el proyecto actual), márcalas como aplicadas antes del push para que solo entren las nuevas:
 
 ```bash
-npx supabase migration repair --status applied 0001 0002
+npx supabase migration repair --status applied 0001 0002 0003 0004
 npx supabase db push
 ```
 
@@ -103,6 +103,15 @@ Salida esperada: `Usuario creado: christianmirabal82@gmail.com` y `Perfil admin 
 pnpm ingest:check
 ```
 Tarda 1–3 minutos. Descarga el calendario (0 créditos de The Odds API), la temporada completa de la Premier (football-data.org), resultados recientes (2 créditos por liga, solo si hay partidos sin marcador), cuotas (2 créditos por liga en modo económico) y calcula predicciones. Al final imprime, por liga, cuántos partidos de los próximos 7 días tienen cuotas y predicción, los partidos por fuente y los créditos restantes. Con los scripts ya cargando `.env.local`, no hace falta `DOTENV_CONFIG_PATH`; `ingest:check` usa `cross-env`, así que funciona también desde Git Bash en Windows.
+
+**Duplicados de equipos:** cuando una liga tiene dos fuentes, un club puede entrar con dos nombres (ej. "Vasco da Gama" y "CR Vasco da Gama"). Revisa y fusiona con:
+
+```bash
+pnpm teams:dedupe          # muestra las fusiones propuestas
+pnpm teams:dedupe --apply  # las ejecuta y crea los alias
+```
+
+**Resultados atrasados:** The Odds API solo devuelve marcadores de 3 días atrás. Si el cron falla más tiempo, `/admin` muestra un aviso ámbar con los partidos sin marcador y el formulario para cargarlo a mano.
 
 **Arranque en frío:** las ligas que salen de The Odds API empiezan sin historial (los resultados solo se pueden pedir 3 días atrás). Hasta que cada equipo acumule 5 partidos, la app marca "Muestra pequeña" y mezcla la probabilidad del modelo con la cuota del mercado, así que los sellos serán BAJA. Es lo esperado; a las 3–4 semanas el modelo trabaja solo. La Premier no tiene este problema.
 

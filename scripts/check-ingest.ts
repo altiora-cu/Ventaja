@@ -98,22 +98,40 @@ async function main() {
   const leagueName = new Map((leagues ?? []).map((l) => [l.id, l.name]));
 
   section(`Próximos 7 días: ${ids.length} partidos`);
-  const byLeague = new Map<number, { total: number; conCuotas: number; conPrediccion: number; sinCuotas: string[] }>();
+  // Las cuotas solo se piden para partidos a ≤ 3 días (ver lib/data/odds-ingest.ts).
+  const ODDS_WINDOW_MS = 3 * 86_400_000;
+  const byLeague = new Map<number, { total: number; enVentana: number; conCuotas: number; conPrediccion: number; sinCuotasEnVentana: string[] }>();
   for (const f of upcoming ?? []) {
-    const e = byLeague.get(f.league_id) ?? { total: 0, conCuotas: 0, conPrediccion: 0, sinCuotas: [] };
+    const e = byLeague.get(f.league_id) ?? { total: 0, enVentana: 0, conCuotas: 0, conPrediccion: 0, sinCuotasEnVentana: [] };
     e.total++;
+    const inWindow = new Date(f.kickoff).getTime() - now.getTime() <= ODDS_WINDOW_MS;
+    if (inWindow) e.enVentana++;
     if (oddsSet.has(f.id)) e.conCuotas++;
-    else e.sinCuotas.push(`${f.home.name} vs ${f.away.name} (${f.kickoff.slice(0, 16)})`);
+    else if (inWindow) e.sinCuotasEnVentana.push(`${f.home.name} vs ${f.away.name} (${f.kickoff.slice(0, 16)})`);
     if (predMap.has(f.id)) e.conPrediccion++;
     byLeague.set(f.league_id, e);
   }
   for (const [lid, e] of byLeague) {
     const l = (leagues ?? []).find((x) => x.id === lid);
-    console.log(`\n${leagueName.get(lid)} · ${e.total} partidos · ${e.conCuotas} con cuotas · ${e.conPrediccion} con predicción${l?.odds_sport_key ? '' : ' · (liga sin cobertura de The Odds API: solo probabilidades)'}`);
-    if (l?.odds_sport_key && e.sinCuotas.length) {
-      console.log('  Sin cuotas (revisar emparejado de nombres en lib/data/matching.ts):');
-      for (const s of e.sinCuotas.slice(0, 10)) console.log(`   - ${s}`);
+    console.log(`\n${leagueName.get(lid)} · ${e.total} partidos en 7 días · ${e.enVentana} en ventana de cuotas (≤3 días) · ${e.conCuotas} con cuotas · ${e.conPrediccion} con predicción${l?.odds_sport_key ? '' : ' · (liga sin cobertura de The Odds API: solo probabilidades)'}`);
+    if (l?.odds_sport_key && e.sinCuotasEnVentana.length) {
+      console.log('  En ventana y sin cuotas (posible nombre sin emparejar, o la casa aún no publicó cuota):');
+      for (const s of e.sinCuotasEnVentana.slice(0, 10)) console.log(`   - ${s}`);
     }
+  }
+
+  // Resultados atrasados: partidos empezados hace > 3 días sin marcador (The Odds API ya no los devuelve).
+  const { data: stale } = await admin
+    .from('fixtures')
+    .select('id,kickoff,league_id,home:teams!fixtures_home_id_fkey(name),away:teams!fixtures_away_id_fkey(name)')
+    .not('status', 'in', '("FT","AET","PEN","PST","CANC","AWD")')
+    .lte('kickoff', new Date(now.getTime() - 3 * 86_400_000).toISOString())
+    .gte('kickoff', new Date(now.getTime() - 60 * 86_400_000).toISOString())
+    .order('kickoff', { ascending: false })
+    .returns<Array<{ id: number; kickoff: string; league_id: number; home: { name: string }; away: { name: string } }>>();
+  if (stale?.length) {
+    section(`Resultados atrasados: ${stale.length} partidos sin marcador con más de 3 días (cargar a mano desde /admin)`);
+    for (const f of stale.slice(0, 15)) console.log(`   - #${f.id} ${leagueName.get(f.league_id)} · ${f.kickoff.slice(0, 16)} · ${f.home.name} vs ${f.away.name}`);
   }
 
   const sellos = { alta: 0, media: 0, baja: 0, sin: 0 };

@@ -315,7 +315,9 @@
     "fixtureId": "Match ID",
     "homeGoals": "Home goals",
     "awayGoals": "Away goals",
-    "scoreSaved": "Score saved and picks settled."
+    "scoreSaved": "Score saved and picks settled.",
+    "staleResults": "{count, plural, =1 {# match} other {# matches}} older than 3 days without a score",
+    "staleResultsHint": "The Odds API only returns scores for the last 3 days. Enter the score manually with the form below (use the match #) to settle its picks."
   },
   "auth": {
     "loginTitle": "Enter your analysis room",

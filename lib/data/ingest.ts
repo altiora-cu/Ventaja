@@ -30,6 +30,8 @@ export async function ingestStats(): Promise<IngestReport> {
 
 export interface IngestReport {
   leagues: number;
+  /** Partidos empezados hace > 3 días sin marcador: The Odds API ya no los devuelve; cargar a mano. */
+  staleResults: number;
   fixturesUpserted: number;
   statsFetched: number;
   playersUpdated: number;
@@ -41,7 +43,7 @@ export interface IngestReport {
 }
 
 function emptyReport(): IngestReport {
-  return { leagues: 0, fixturesUpserted: 0, statsFetched: 0, playersUpdated: 0, injuries: 0, lineups: 0, teamStats: 0, skipped: [], errors: [] };
+  return { leagues: 0, staleResults: 0, fixturesUpserted: 0, statsFetched: 0, playersUpdated: 0, injuries: 0, lineups: 0, teamStats: 0, skipped: [], errors: [] };
 }
 
 export async function activeLeagues(admin: SupabaseClient): Promise<League[]> {
@@ -506,7 +508,21 @@ export async function ingestFixturesProviders(): Promise<IngestReport> {
       }
     }
   }
+  report.staleResults = await countStaleResults(admin);
+  if (report.staleResults > 0) console.warn(`[ingest] ${report.staleResults} partidos con más de 3 días sin marcador: cargar a mano desde /admin`);
   return report;
+}
+
+/** Partidos empezados hace más de 3 días que siguen sin marcador (alerta para /admin y el cron). */
+export async function countStaleResults(admin: SupabaseClient): Promise<number> {
+  const now = Date.now();
+  const { count } = await admin
+    .from('fixtures')
+    .select('id', { count: 'exact', head: true })
+    .not('status', 'in', '("FT","AET","PEN","PST","CANC","AWD")')
+    .lte('kickoff', new Date(now - 3 * 86_400_000).toISOString())
+    .gte('kickoff', new Date(now - 60 * 86_400_000).toISOString());
+  return count ?? 0;
 }
 
 /** Sin API-Football: asegura el calendario y recalcula team_stats, Elo y árbitros desde nuestros fixtures. */

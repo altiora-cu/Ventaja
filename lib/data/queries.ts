@@ -297,3 +297,19 @@ export function isFinishedStatus(status: string): boolean {
 }
 
 export type { Team };
+
+/** Partidos empezados hace > 3 días sin marcador (para el aviso de /admin). */
+export const getStaleFixtures = cache(async (): Promise<Array<{ id: number; kickoff: string; home: { name: string }; away: { name: string } }>> => {
+  if (!hasSupabaseEnv()) return [];
+  const now = Date.now();
+  const { data } = await db()
+    .from('fixtures')
+    .select('id,kickoff,home:teams!fixtures_home_id_fkey(name),away:teams!fixtures_away_id_fkey(name)')
+    .not('status', 'in', '("FT","AET","PEN","PST","CANC","AWD")')
+    .lte('kickoff', new Date(now - 3 * 86_400_000).toISOString())
+    .gte('kickoff', new Date(now - 60 * 86_400_000).toISOString())
+    .order('kickoff', { ascending: false })
+    .limit(50)
+    .returns<Array<{ id: number; kickoff: string; home: { name: string }; away: { name: string } }>>();
+  return data ?? [];
+});
