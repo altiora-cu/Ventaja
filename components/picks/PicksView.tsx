@@ -4,11 +4,12 @@ import { useTranslations } from 'next-intl';
 import { useMemo, useState, useTransition } from 'react';
 import { saveCombo } from '@/app/actions/jugadas';
 import { MarkButton } from '@/components/jugadas/MarkButton';
+import { AiVerdictNote } from '@/components/ui/AiVerdictNote';
 import { Sello } from '@/components/ui/Sello';
 import { StaggerItem, StaggerList } from '@/components/ui/Motion';
 import { IconBookmark, IconCopy, IconCheck } from '@/components/ui/Icons';
 import { buildCombos, COMBO_RULES, type ComboKind, type ComboSelection } from '@/lib/engine/combos';
-import type { Sello as SelloNivel } from '@/lib/db/types';
+import type { AiPlayReview, Sello as SelloNivel } from '@/lib/db/types';
 import { selectionLabel } from '@/lib/labels';
 import { odds, pct, signedPct } from '@/lib/utils';
 import type { Locale } from '@/i18n/config';
@@ -23,6 +24,8 @@ export interface PickRow extends ComboSelection {
   kickoff: string;
   /** El partido ya empezó: la jugada se muestra pero no se puede marcar ni combinar. */
   started: boolean;
+  /** Revisión IA de esta jugada; null si aún no se generó. */
+  ai: AiPlayReview | null;
 }
 
 interface Props {
@@ -67,6 +70,9 @@ export function PicksView({ rows, leagues, locale, dateLabel, markedIds }: Props
   const t = useTranslations('picks');
   const tc = useTranslations('common');
   const ts = useTranslations('sello');
+  const tpa = useTranslations('partido');
+  const tv = useTranslations('aiVerdict');
+  const aiLabels = { title: tpa('aiReview'), concuerda: tv('concuerda'), cautela: tv('cautela'), discrepa: tv('discrepa'), missing: tpa('aiPlayMissing') };
   const [tab, setTab] = useState<'singles' | 'combos'>('singles');
   const [sello, setSello] = useState<SelloNivel | 'all'>('all');
   const [league, setLeague] = useState<number | 'all'>('all');
@@ -78,7 +84,7 @@ export function PicksView({ rows, leagues, locale, dateLabel, markedIds }: Props
     () => rows.filter((r) => (sello === 'all' || r.sello === sello) && (league === 'all' || r.league_id === league)).sort((a, b) => b.edge - a.edge),
     [rows, sello, league],
   );
-  const combos = useMemo(() => buildCombos(rows.filter((r) => !r.started)), [rows]);
+  const combos = useMemo(() => buildCombos(rows.filter((r) => !r.started && r.ai?.verdict !== 'discrepa')), [rows]);
   const label = (r: PickRow) => selectionLabel(r.market, r.selection, r.line, { home: r.home, away: r.away, player: r.player_name }, locale);
   const clip = (lines: string[]) => [t('clipboardHeader', { date: dateLabel }), ...lines, '', t('clipboardFooter')].join('\n');
 
@@ -132,6 +138,7 @@ export function PicksView({ rows, leagues, locale, dateLabel, markedIds }: Props
                           {r.home} vs {r.away} · {r.league}
                         </Link>
                         <p className="mt-1 truncate font-medium">{label(r)}</p>
+                        <AiVerdictNote review={r.ai ?? undefined} labels={aiLabels} className="mt-1.5" />
                       </div>
                       <Sello nivel={r.sello} animate={false} />
                     </div>

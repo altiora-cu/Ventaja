@@ -1,4 +1,5 @@
 import type { Sello } from '@/lib/db/types';
+import type { AiPlayReview } from './plays-review';
 
 /**
  * Prompt fijo de la Revisión IA. La IA no calcula probabilidades: audita el pick del modelo
@@ -50,14 +51,21 @@ export interface RevisionFacts {
 
 const pct = (p: number) => `${Math.round(p * 100)}%`;
 
-export function revisionUserMessage(f: RevisionFacts): string {
+/** Contexto del partido que comparten la revisión del pick principal y la revisión por jugada. */
+export function contextLines(f: RevisionFacts): string[] {
   return [
-    `Partido: ${f.home} vs ${f.away} · ${f.league} · ${f.kickoff}`,
-    `Pick del modelo: ${f.pickLabel} · prob ${pct(f.pickProb)} · cuota ${f.pickPrice?.toFixed(2) ?? 'sin cuota'} · ventaja ${f.pickEdge === null ? 'n/d' : `${(f.pickEdge * 100).toFixed(1)}%`} · sello ${f.selloModelo.toUpperCase()}`,
     `Modelo 1X2: ${f.home} ${pct(f.probHome)} · empate ${pct(f.probDraw)} · ${f.away} ${pct(f.probAway)} · goles esperados ${f.lambdaHome.toFixed(2)}–${f.lambdaAway.toFixed(2)}`,
     `${f.home}: forma ${f.homeForm || 'sin datos'} · ${f.homePlayed} partidos en la temporada · xG/partido ${f.homeXgPerGame?.toFixed(2) ?? 'n/d'} · bajas: ${f.homeMissing.length ? f.homeMissing.join(', ') : 'ninguna reportada'}`,
     `${f.away}: forma ${f.awayForm || 'sin datos'} · ${f.awayPlayed} partidos en la temporada · xG/partido ${f.awayXgPerGame?.toFixed(2) ?? 'n/d'} · bajas: ${f.awayMissing.length ? f.awayMissing.join(', ') : 'ninguna reportada'}`,
     `Casas con cuota: ${f.bookmakers}${f.referee ? ` · árbitro ${f.referee}${f.refereeCards !== null ? ` (${f.refereeCards.toFixed(1)} tarjetas/partido)` : ''}` : ''}`,
+  ];
+}
+
+export function revisionUserMessage(f: RevisionFacts): string {
+  return [
+    `Partido: ${f.home} vs ${f.away} · ${f.league} · ${f.kickoff}`,
+    `Pick del modelo: ${f.pickLabel} · prob ${pct(f.pickProb)} · cuota ${f.pickPrice?.toFixed(2) ?? 'sin cuota'} · ventaja ${f.pickEdge === null ? 'n/d' : `${(f.pickEdge * 100).toFixed(1)}%`} · sello ${f.selloModelo.toUpperCase()}`,
+    ...contextLines(f),
   ].join('\n');
 }
 
@@ -72,6 +80,10 @@ export interface AiReview {
   model: string;
   key: string;
   at: string;
+  /** Revisión de cada jugada recomendada del partido (no solo del pick principal). */
+  plays?: AiPlayReview[];
+  /** Clave de caché de `plays`. */
+  plays_key?: string;
 }
 
 const BANNED = /garantizad|segura|fija/i;

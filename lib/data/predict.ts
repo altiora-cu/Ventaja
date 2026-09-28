@@ -2,9 +2,11 @@ import 'server-only';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { createAdminClient } from '@/lib/supabase/admin';
 import type { Fixture, FixtureAnalysis, Injury, League, Odd, PlayerStats, Team, TeamStats, TopMarket } from '@/lib/db/types';
-import { predictFixture, shrinkToMarket, topPick, MIN_PLAYED_FULL_MODEL, type FixtureInput, type MarketKey, type OddsQuote, type PlayerInput, type TeamInput } from '@/lib/engine';
+import { predictFixture, qualifiesAsPick, shrinkToMarket, topPick, MIN_PLAYED_FULL_MODEL, type FixtureInput, type MarketKey, type OddsQuote, type PlayerInput, type TeamInput } from '@/lib/engine';
 import { generarLectura } from '@/lib/engine/lectura';
-import { revisarPick, revisionEnabled } from '@/lib/engine/revision';
+import { selectionKey } from '@/lib/engine/edge';
+import { MAX_PLAYS_REVIEWED, playsKey, type PlayFacts } from '@/lib/engine/plays-review';
+import { revisarJugadas, revisarPick, revisionEnabled } from '@/lib/engine/revision';
 import { revisionKey, type RevisionFacts } from '@/lib/engine/revision-prompt';
 import type { LecturaFacts } from '@/lib/engine/lectura-prompt';
 import { selectionLabel } from '@/lib/labels';
@@ -17,6 +19,8 @@ export interface PredictReport {
   predictions: number;
   lecturas: number;
   revisiones: number;
+  /** Jugadas recomendadas que recibieron veredicto de la IA. */
+  jugadasRevisadas: number;
   errors: string[];
 }
 
@@ -50,7 +54,7 @@ function toTeamInput(team: Team, ts: TeamStats | undefined, missing: number): Te
 /** Recalcula predicciones y Lecturas de los partidos entre hoy y +3 días (o de una fecha concreta). */
 export async function runPredictions(dateKey?: string): Promise<PredictReport> {
   const admin = createAdminClient();
-  const report: PredictReport = { fixtures: 0, predictions: 0, lecturas: 0, revisiones: 0, errors: [] };
+  const report: PredictReport = { fixtures: 0, predictions: 0, lecturas: 0, revisiones: 0, jugadasRevisadas: 0, errors: [] };
   const leagues = await activeLeagues(admin);
 
   const now = new Date();
@@ -181,8 +185,23 @@ export async function runPredictions(dateKey?: string): Promise<PredictReport> {
         if ((!aiReview || aiReview.key !== key) && report.revisiones < AI_REVIEW_MAX) {
           const r = await revisarPick(rfacts);
           if (r) {
-            aiReview = r;
+            // La revisión por jugada se conserva si el pick principal cambió pero las jugadas no.
+            aiReview = { ...r, plays: aiReview?.plays, plays_key: aiReview?.plays_key };
             report.revisiones++;
+          }
+        }
+        // Todas las jugadas que el sistema recomienda pasan por la IA, no solo el pick principal.
+        const plays = recommendedPlays(result.priced, f);
+        if (aiReview && !plays.length) aiReview = { ...aiReview, plays: undefined, plays_key: undefined };
+        if (aiReview && plays.length) {
+          const pKey = playsKey(rfacts, plays);
+          if (aiReview.plays_key !== pKey && report.revisiones < AI_REVIEW_MAX) {
+            const reviewed = await revisarJugadas(rfacts, plays);
+            if (reviewed) {
+              aiReview = { ...aiReview, plays: reviewed, plays_key: pKey };
+              report.revisiones++;
+              report.jugadasRevisadas += reviewed.length;
+            }
           }
         }
       } else if (!pick) {
@@ -211,6 +230,22 @@ export async function runPredictions(dateKey?: string): Promise<PredictReport> {
     }
   }
   return report;
+}
+
+/** Jugadas que cumplen el umbral de pick y tienen cuota, de mayor a menor ventaja. */
+function recommendedPlays(priced: ReturnType<typeof predictFixture>['priced'], f: FixtureRow): PlayFacts[] {
+  return priced
+    .filter((p) => p.best_price && p.market !== 'correct_score' && qualifiesAsPick(p))
+    .sort((a, b) => (b.edge ?? 0) - (a.edge ?? 0))
+    .slice(0, MAX_PLAYS_REVIEWED)
+    .map((p) => ({
+      key: selectionKey(p.market, p.selection, p.line, p.player_id),
+      label: selectionLabel(p.market, p.selection, p.line, { home: f.home.name, away: f.away.name, player: p.player_name }, 'es'),
+      prob: p.prob,
+      price: p.best_price,
+      edge: p.edge,
+      sello: p.sello,
+    }));
 }
 
 function round(n: number, d = 4): number {

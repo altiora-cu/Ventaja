@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { bestPlays, riskLevel, SAFE_MIN_PROB, toPlayCandidate, type PlayCandidate } from './best-plays';
+import { bestPlays, rejectedByAi, riskLevel, SAFE_MIN_PROB, toPlayCandidate, type PlayCandidate } from './best-plays';
 
 function cand(over: Partial<PlayCandidate>): PlayCandidate {
   return { id: 1, market: 'totals', selection: 'under', line: 2.5, player_id: null, prob: 0.7, best_price: 1.6, edge: 0.08, sello: 'alta', ...over };
@@ -61,5 +61,22 @@ describe('toPlayCandidate', () => {
   it('conserva los nulos de línea, cuota y ventaja', () => {
     const row = { id: 8, fixture_id: 1, market: '1x2', selection: 'home', line: null, player_id: null, player_name: null, prob: 0.5, best_price: null, edge: null, sello: 'baja' } as unknown as Parameters<typeof toPlayCandidate>[0];
     expect(toPlayCandidate(row)).toMatchObject({ line: null, best_price: null, edge: null });
+  });
+});
+
+describe('rejectedByAi', () => {
+  it('excluye de las mejores jugadas las que la revisión IA contradice', () => {
+    const rows = [cand({ id: 1, market: 'totals', selection: 'under', line: 2.5, prob: 0.8 }), cand({ id: 2, market: '1x2', selection: 'home', line: null, prob: 0.7 })];
+    const reviews = [
+      { key: 'totals|under|2.5|', verdict: 'discrepa' as const, note: 'n', sello_modelo: 'alta' as const, sello_final: 'baja' as const },
+      { key: '1x2|home||', verdict: 'cautela' as const, note: 'n', sello_modelo: 'alta' as const, sello_final: 'media' as const },
+    ];
+    const rejected = rejectedByAi(rows, reviews);
+    expect([...rejected]).toEqual([1]);
+    expect(bestPlays(rows, undefined, rejected).map((p) => p.id)).toEqual([2]);
+  });
+
+  it('sin revisión no excluye nada', () => {
+    expect(rejectedByAi([cand({})], null).size).toBe(0);
   });
 });

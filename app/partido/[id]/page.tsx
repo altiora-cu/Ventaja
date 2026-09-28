@@ -17,7 +17,7 @@ import { getViewer } from '@/lib/auth/viewer';
 import { getMarkedPredictionIds } from '@/lib/data/jugadas';
 import { getFixtureDetail } from '@/lib/data/queries';
 import { isFinished } from '@/lib/data/statuses';
-import { bestPlays, toPlayCandidate } from '@/lib/engine/best-plays';
+import { bestPlays, rejectedByAi, toPlayCandidate } from '@/lib/engine/best-plays';
 import { marketName } from '@/lib/labels';
 import { getTimeZone } from '@/lib/tz';
 import { fmtDate, fmtTime } from '@/lib/utils';
@@ -54,7 +54,9 @@ export default async function PartidoPage({ params, searchParams }: { params: { 
   const missing = (teamId: number) => injuries.filter((i) => i.team_id === teamId);
   const locked = !OPEN_STATUSES.includes(f.status) || new Date(f.kickoff).getTime() <= Date.now();
   const markedIds = await getMarkedPredictionIds(viewer.user?.id ?? null, predictions);
-  const bestCount = bestPlays(predictions.map(toPlayCandidate)).length;
+  const aiPlays = review?.plays ?? null;
+  const candidates = predictions.map(toPlayCandidate);
+  const bestCount = bestPlays(candidates, undefined, rejectedByAi(candidates, aiPlays)).length;
   const missingMarkets = predictions.length ? STAT_MARKETS.filter((m) => !predictions.some((p) => p.market === m)) : [];
   const vistas: Array<{ key: Vista; href: string; label: string }> = [
     { key: 'analisis', href: `/partido/${f.id}`, label: t('viewAnalysis') },
@@ -127,7 +129,7 @@ export default async function PartidoPage({ params, searchParams }: { params: { 
       </nav>
 
       {vista === 'mejores' ? (
-        <MejoresJugadas predictions={predictions} home={f.home.name} away={f.away.name} locale={locale} markedIds={markedIds} locked={locked} />
+        <MejoresJugadas predictions={predictions} home={f.home.name} away={f.away.name} locale={locale} markedIds={markedIds} locked={locked} aiPlays={aiPlays} />
       ) : (
         <>
       <FadeIn>

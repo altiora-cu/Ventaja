@@ -134,7 +134,7 @@
     "aiVerdictLabel": "Verdict",
     "aiRisks": "Risks found",
     "aiSelloNote": "Model seal {modelo} → final seal {final}",
-    "aiDisclaimer": "The AI audits the model pick using form, absences and odds. It can only lower the seal, never raise it. It is not a prediction.",
+    "aiDisclaimer": "The AI audits the main pick and every recommended play using form, absences and odds. It can only lower the seal, never raise it. It is not a prediction.",
     "smallSample": "Small sample: one of the teams has fewer than 5 matches with data. Probability is blended with market odds until the sample fills in.",
     "viewAnalysis": "Full analysis",
     "viewBest": "Best plays",
@@ -145,7 +145,9 @@
     "bestStarted": "The match has already started. These were the recommended plays before kickoff.",
     "riskBajo": "Low risk",
     "riskMedio": "Medium risk",
-    "missingMarkets": "No data for: {markets}. The current sources do not provide those stats, and the model would rather show nothing than make up a number."
+    "missingMarkets": "No data for: {markets}. The current sources do not provide those stats, and the model would rather show nothing than make up a number.",
+    "aiPlayMissing": "No AI review yet.",
+    "aiPlaysHint": "Every recommended play goes through the AI Review. The AI does not change probabilities: it can only lower the seal or remove the play from this list."
   },
   "markets": {
     "1x2": "Result (1X2)",

@@ -1,8 +1,9 @@
 import 'server-only';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { createAdminClient } from '@/lib/supabase/admin';
-import type { Fixture, FixtureFull, PickResult, Prediction, SystemCombo, SystemComboSelection, UserCombo, UserPick } from '@/lib/db/types';
+import type { Fixture, FixtureAnalysis, FixtureFull, PickResult, Prediction, SystemCombo, SystemComboSelection, UserCombo, UserPick } from '@/lib/db/types';
 import { buildCombos, type ComboSelection } from '@/lib/engine/combos';
+import { selectionKey } from '@/lib/engine/edge';
 import { DEFAULT_TZ, zonedStartOfDay } from '@/lib/tz';
 import { toDateKey } from '@/lib/utils';
 import { comboUnits, settleCombo } from './combo-rules';
@@ -169,7 +170,12 @@ export async function registerSystemCombos(dateKey = toDateKey(new Date(), DEFAU
     .returns<Prediction[]>();
   if (predErr) throw predErr;
 
-  const candidates: Array<ComboSelection & { player_id: number | null }> = (preds ?? []).map((p) => ({
+  // Las jugadas que la Revisión IA contradice no entran en las combinadas.
+  const { data: analyses } = await admin.from('fixture_analysis').select('fixture_id,ai_review').in('fixture_id', fixtures.map((f) => f.id)).returns<Array<Pick<FixtureAnalysis, 'fixture_id' | 'ai_review'>>>();
+  const rejected = new Set((analyses ?? []).flatMap((a) => (a.ai_review?.plays ?? []).filter((r) => r.verdict === 'discrepa').map((r) => `${a.fixture_id}|${r.key}`)));
+  const accepted = (preds ?? []).filter((p) => !rejected.has(`${p.fixture_id}|${selectionKey(p.market, p.selection, p.line === null ? null : Number(p.line), p.player_id)}`));
+
+  const candidates: Array<ComboSelection & { player_id: number | null }> = accepted.map((p) => ({
     fixture_id: p.fixture_id,
     market: p.market,
     selection: p.selection,

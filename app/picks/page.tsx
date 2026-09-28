@@ -34,7 +34,8 @@ export default async function PicksPage({ searchParams }: { searchParams: { fech
       prob: Number(c.prob),
       price: Number(c.best_price),
       edge: Number(c.edge),
-      sello: c.sello,
+      sello: c.ai?.sello_final ?? c.sello,
+      ai: c.ai,
     }));
   const leagues = [...new Map(rows.map((r) => [r.league_id, { id: r.league_id, name: r.league }])).values()];
   return (

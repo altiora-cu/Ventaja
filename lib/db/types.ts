@@ -204,19 +204,10 @@ export interface TopMarket {
   min_played?: number;
 }
 
-export type AiVerdict = 'concuerda' | 'cautela' | 'discrepa';
-
-/** Revisión IA del pick principal: audita el pick del modelo y solo puede bajar el sello. */
-export interface AiReview {
-  verdict: AiVerdict;
-  risks: string[];
-  note: string;
-  sello_modelo: Sello;
-  sello_final: Sello;
-  model: string;
-  key: string;
-  at: string;
-}
+/** Revisión IA: audita el pick principal y cada jugada recomendada; solo puede bajar el sello. */
+import type { AiReview } from '@/lib/engine/revision-prompt';
+export type { AiReview, AiVerdict } from '@/lib/engine/revision-prompt';
+export type { AiPlayReview } from '@/lib/engine/plays-review';
 
 export interface FixtureAnalysis {
   fixture_id: number;

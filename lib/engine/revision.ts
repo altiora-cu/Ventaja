@@ -1,5 +1,6 @@
 import 'server-only';
 import Anthropic from '@anthropic-ai/sdk';
+import { MAX_PLAYS_REVIEWED, parsePlaysReview, PLAYS_MAX_TOKENS, PLAYS_SYSTEM, playsUserMessage, type AiPlayReview, type PlayFacts } from './plays-review';
 import { parseRevision, REVISION_MAX_TOKENS, REVISION_MODEL, REVISION_SYSTEM, REVISION_TEMPERATURE, revisionKey, revisionUserMessage, selloFinal, type AiReview, type RevisionFacts } from './revision-prompt';
 
 let client: Anthropic | null = null;
@@ -44,6 +45,33 @@ export async function revisarPick(facts: RevisionFacts): Promise<AiReview | null
     };
   } catch (err) {
     console.error('[revision] fallo Claude', err);
+    return null;
+  }
+}
+
+/**
+ * Revisión IA de las jugadas recomendadas de un partido, en una sola llamada. Devuelve null si no hay
+ * clave, no hay jugadas o la respuesta no sirve: la app muestra entonces el sello del modelo.
+ */
+export async function revisarJugadas(facts: RevisionFacts, plays: readonly PlayFacts[]): Promise<AiPlayReview[] | null> {
+  const anthropic = getClient();
+  const reviewed = plays.slice(0, MAX_PLAYS_REVIEWED);
+  if (!anthropic || !revisionEnabled() || !reviewed.length) return null;
+  try {
+    const res = await anthropic.messages.create({
+      model: REVISION_MODEL,
+      max_tokens: PLAYS_MAX_TOKENS,
+      temperature: REVISION_TEMPERATURE,
+      system: PLAYS_SYSTEM,
+      messages: [{ role: 'user', content: playsUserMessage(facts, reviewed) }],
+    });
+    const text = res.content
+      .filter((b): b is Anthropic.TextBlock => b.type === 'text')
+      .map((b) => b.text)
+      .join('');
+    return parsePlaysReview(text, reviewed);
+  } catch (err) {
+    console.error('[revision] fallo Claude en la revisión por jugada', err);
     return null;
   }
 }

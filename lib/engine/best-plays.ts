@@ -1,5 +1,5 @@
-import type { Prediction, Sello } from '@/lib/db/types';
-import { qualifiesAsPick } from './edge';
+import type { AiPlayReview, Prediction, Sello } from '@/lib/db/types';
+import { qualifiesAsPick, selectionKey } from './edge';
 
 /** Por debajo de esta probabilidad una jugada se considera arriesgada y no entra en "Mejores jugadas". */
 export const SAFE_MIN_PROB = 0.6;
@@ -52,6 +52,12 @@ function isSafePlay(c: PlayCandidate): boolean {
   return qualifiesAsPick({ prob: c.prob, edge: c.edge });
 }
 
+/** Ids de las jugadas que la Revisión IA contradice ("discrepa"): no se recomiendan. */
+export function rejectedByAi(candidates: readonly PlayCandidate[], reviews: readonly AiPlayReview[] | null | undefined): Set<number> {
+  const rejected = new Set((reviews ?? []).filter((r) => r.verdict === 'discrepa').map((r) => r.key));
+  return new Set(candidates.filter((c) => rejected.has(selectionKey(c.market, c.selection, c.line, c.player_id))).map((c) => c.id));
+}
+
 /** Los jugadores son mercados independientes entre sí; el resto se agrupa por mercado. */
 function groupKey(c: PlayCandidate): string {
   return c.player_id === null ? c.market : `${c.market}:${c.player_id}`;
@@ -59,12 +65,13 @@ function groupKey(c: PlayCandidate): string {
 
 /**
  * Mejores jugadas de un partido: con ventaja, con cuota y sin riesgo alto.
- * Una por mercado (la más probable), para no mostrar líneas que dicen lo mismo. Función pura.
+ * Una por mercado (la más probable), para no mostrar líneas que dicen lo mismo.
+ * `rejected`: ids de las jugadas que la revisión IA contradice; no entran. Función pura.
  */
-export function bestPlays<T extends PlayCandidate>(candidates: readonly T[], max = MAX_BEST_PLAYS): T[] {
+export function bestPlays<T extends PlayCandidate>(candidates: readonly T[], max = MAX_BEST_PLAYS, rejected: ReadonlySet<number> = new Set()): T[] {
   const byGroup = new Map<string, T>();
   for (const c of candidates) {
-    if (!isSafePlay(c)) continue;
+    if (!isSafePlay(c) || rejected.has(c.id)) continue;
     const key = groupKey(c);
     const current = byGroup.get(key);
     if (!current || c.prob > current.prob || (c.prob === current.prob && (c.edge ?? 0) > (current.edge ?? 0))) byGroup.set(key, c);
