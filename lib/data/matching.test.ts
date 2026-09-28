@@ -10,6 +10,17 @@ describe('matching', () => {
     expect(nameSimilarity('Pumas UNAM', 'Cruz Azul')).toBeLessThan(0.3);
   });
 
+  it('empareja clubes brasileños entre football-data.org y The Odds API', () => {
+    expect(nameSimilarity('CR Flamengo', 'Flamengo-RJ')).toBeGreaterThanOrEqual(0.6);
+    expect(nameSimilarity('SE Palmeiras', 'Palmeiras-SP')).toBeGreaterThanOrEqual(0.6);
+    expect(nameSimilarity('RB Bragantino', 'Bragantino-SP')).toBeGreaterThanOrEqual(0.6);
+    expect(nameSimilarity('CA Mineiro', 'Atletico Mineiro')).toBeGreaterThanOrEqual(0.6);
+    expect(nameSimilarity('São Paulo FC', 'Sao Paulo')).toBeGreaterThanOrEqual(0.6);
+    expect(nameSimilarity('Estudiantes de La Plata', 'Estudiantes La Plata')).toBeGreaterThanOrEqual(0.6);
+    expect(nameSimilarity('CR Flamengo', 'Fluminense-RJ')).toBeLessThan(0.6);
+    expect(nameSimilarity('SE Palmeiras', 'Sao Paulo')).toBeLessThan(0.6);
+  });
+
   it('empareja por nombre y ventana horaria sin repetir eventos', () => {
     const t = '2026-09-27T23:00:00Z';
     const fixtures = [
