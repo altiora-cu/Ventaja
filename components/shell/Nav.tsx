@@ -3,12 +3,13 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { IconCalendar, IconHistory, IconSearch, IconTarget, IconUser } from '@/components/ui/Icons';
+import { IconBookmark, IconCalendar, IconHistory, IconSearch, IconTarget, IconUser } from '@/components/ui/Icons';
 import { cn } from '@/lib/utils';
 
 const ITEMS = [
   { href: '/', key: 'jornada', Icon: IconCalendar },
   { href: '/picks', key: 'picks', Icon: IconTarget },
+  { href: '/mis-jugadas', key: 'misJugadas', Icon: IconBookmark },
   { href: '/buscar', key: 'buscar', Icon: IconSearch },
   { href: '/historial', key: 'historial', Icon: IconHistory },
 ] as const;
@@ -18,18 +19,18 @@ function isActive(pathname: string, href: string): boolean {
   return pathname.startsWith(href);
 }
 
-/** Móvil: barra inferior fija con 4 ítems. Desktop: sidebar izquierda 240px. */
+/** Móvil: barra inferior fija con 5 ítems. Desktop: sidebar izquierda 240px. */
 export function BottomNav() {
   const pathname = usePathname();
   const t = useTranslations('nav');
   return (
     <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-bg/95 backdrop-blur lg:hidden" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }} aria-label={t('jornada')}>
-      <ul className="mx-auto grid h-[64px] max-w-app grid-cols-4">
+      <ul className="mx-auto grid h-[64px] max-w-app grid-cols-5">
         {ITEMS.map(({ href, key, Icon }) => {
           const active = isActive(pathname, href);
           return (
             <li key={href}>
-              <Link href={href} className={cn('flex h-full flex-col items-center justify-center gap-1 text-[11px] font-medium', active ? 'text-ventaja' : 'text-muted hover:text-text')} aria-current={active ? 'page' : undefined}>
+              <Link href={href} className={cn('flex h-full flex-col items-center justify-center gap-1 px-0.5 text-center text-[11px] font-medium leading-none', active ? 'text-ventaja' : 'text-muted hover:text-text')} aria-current={active ? 'page' : undefined}>
                 <Icon width={22} height={22} />
                 {t(key)}
               </Link>

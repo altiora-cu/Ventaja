@@ -3,6 +3,7 @@
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { useTranslations } from 'next-intl';
 import { useMemo, useState } from 'react';
+import { MarkButton } from '@/components/jugadas/MarkButton';
 import { Sello } from '@/components/ui/Sello';
 import { ProbBar } from '@/components/ui/ProbBar';
 import { IconChevron } from '@/components/ui/Icons';
@@ -17,6 +18,9 @@ interface Props {
   home: string;
   away: string;
   locale: Locale;
+  markedIds: number[];
+  /** El partido ya empezó o terminó. */
+  locked: boolean;
 }
 
 /** Orden de filas dentro de cada mercado. */
@@ -33,11 +37,14 @@ function sortRows(market: string, rows: Prediction[]): Prediction[] {
   });
 }
 
-export function MercadosList({ predictions, home, away, locale }: Props) {
+const ROW_COLS = 'sm:grid-cols-[1fr_72px_96px_80px_84px_104px]';
+
+export function MercadosList({ predictions, home, away, locale, markedIds, locked }: Props) {
   const t = useTranslations('partido');
   const tc = useTranslations('common');
   const reduce = useReducedMotion();
   const [open, setOpen] = useState<Set<string>>(() => new Set(MARKETS_OPEN_BY_DEFAULT));
+  const marked = useMemo(() => new Set(markedIds), [markedIds]);
 
   const groups = useMemo(() => {
     const map = new Map<MarketKey, Prediction[]>();
@@ -81,23 +88,24 @@ export function MercadosList({ predictions, home, away, locale }: Props) {
               {isOpen && (
                 <motion.div id={`m-${market}`} initial={reduce ? false : { height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2, ease: 'easeInOut' }} className="overflow-hidden">
                   <div className="border-t border-border">
-                    <div className="hidden grid-cols-[1fr_88px_110px_88px_84px] gap-2 px-4 pt-3 text-xs uppercase tracking-[0.04em] text-faint sm:grid">
+                    <div className={`hidden gap-2 px-4 pt-3 text-xs uppercase tracking-[0.04em] text-faint sm:grid ${ROW_COLS}`}>
                       <span>{tc('market')}</span>
                       <span className="text-right">{tc('probability')}</span>
                       <span className="text-right">{tc('bestOdds')}</span>
                       <span className="text-right">{tc('edge')}</span>
+                      <span aria-hidden="true" />
                       <span aria-hidden="true" />
                     </div>
                     <ul className="divide-y divide-border">
                       {rows.map((r) => {
                         const label = selectionLabel(r.market, r.selection, r.line, { home, away, player: r.player_name }, locale);
                         return (
-                          <li key={`${r.selection}-${r.line}-${r.player_id}`} className="grid grid-cols-[1fr_auto] items-center gap-x-3 gap-y-1 px-4 py-3 sm:grid-cols-[1fr_88px_110px_88px_84px] sm:gap-2">
-                            <div className="min-w-0">
+                          <li key={`${r.selection}-${r.line}-${r.player_id}`} className={`grid grid-cols-[1fr_auto] items-center gap-x-3 gap-y-2 px-4 py-3 sm:gap-2 ${ROW_COLS}`}>
+                            <div className="order-1 min-w-0 sm:order-none">
                               <p className="truncate text-sm">{label}</p>
                               <ProbBar value={Number(r.prob)} className="mt-1.5 max-w-[160px]" accent={r.sello !== 'baja'} height={3} />
                             </div>
-                            <div className="flex items-center gap-3 sm:contents">
+                            <div className="order-3 col-span-2 flex items-center justify-between gap-3 sm:order-none sm:contents">
                               <span className="num text-right text-sm">{pct(Number(r.prob))}</span>
                               <span className="num text-right text-sm text-muted">
                                 {odds(r.best_price)}
@@ -108,6 +116,7 @@ export function MercadosList({ predictions, home, away, locale }: Props) {
                                 <Sello nivel={r.sello} animate={false} />
                               </span>
                             </div>
+                            <MarkButton predictionId={r.id} initialMarked={marked.has(r.id)} locked={locked} className="order-2 sm:order-none" />
                           </li>
                         );
                       })}

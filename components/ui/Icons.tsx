@@ -57,7 +57,12 @@ export const IconCopy = (p: P) => (
     <path d="M5 15V5a2 2 0 0 1 2-2h10" />
   </svg>
 );
-export const IconChevron = (p: P) => (
+export const IconBookmark = (p: P) => (
+  <svg {...base(p)}>
+    <path d="M6 4h12v17l-6-4-6 4V4Z" />
+  </svg>
+);
+export const IconChevron =(p: P) => (
   <svg {...base(p)}>
     <path d="m6 9 6 6 6-6" />
   </svg>

@@ -61,7 +61,8 @@
     "admin": "Admin",
     "login": "Entrar",
     "register": "Crear cuenta",
-    "logout": "Cerrar sesión"
+    "logout": "Cerrar sesión",
+    "misJugadas": "Mis jugadas"
   },
   "sello": {
     "label": "Sello de Confianza",
@@ -133,8 +134,20 @@
     "aiVerdictLabel": "Veredicto",
     "aiRisks": "Riesgos detectados",
     "aiSelloNote": "Sello del modelo {modelo} → sello final {final}",
-    "aiDisclaimer": "La IA audita el pick del modelo con forma, bajas y cuotas. Solo puede bajar el sello, nunca subirlo. No es una predicción.",
-    "smallSample": "Muestra pequeña: uno de los equipos tiene menos de 5 partidos con datos. La probabilidad se mezcla con la cuota del mercado hasta completar la muestra."
+    "aiDisclaimer": "La IA audita el pick principal y cada jugada recomendada con forma, bajas y cuotas. Solo puede bajar el sello, nunca subirlo. No es una predicción.",
+    "smallSample": "Muestra pequeña: uno de los equipos tiene menos de 5 partidos con datos. La probabilidad se mezcla con la cuota del mercado hasta completar la muestra.",
+    "viewAnalysis": "Análisis completo",
+    "viewBest": "Mejores jugadas",
+    "viewLabel": "Vista de la ficha",
+    "bestTitle": "Mejores jugadas del partido",
+    "bestHint": "Solo jugadas con ventaja sobre la cuota, probabilidad de 60% o más y cuota disponible. Una por mercado, de la más probable a la menos.",
+    "bestEmpty": "Este partido no tiene jugadas que valgan la pena: ninguna combina ventaja y probabilidad suficiente. No forzar también es una ventaja.",
+    "bestStarted": "El partido ya empezó. Estas eran las jugadas recomendadas antes del pitazo.",
+    "riskBajo": "Riesgo bajo",
+    "riskMedio": "Riesgo medio",
+    "missingMarkets": "Sin datos para: {markets}. Las fuentes actuales no entregan esas estadísticas, y el modelo prefiere no mostrar un número antes que inventarlo.",
+    "aiPlayMissing": "Sin revisión IA todavía.",
+    "aiPlaysHint": "Cada jugada recomendada pasa por la Revisión IA. La IA no cambia probabilidades: solo puede bajar el sello o sacar la jugada de esta lista."
   },
   "markets": {
     "1x2": "Resultado (1X2)",
@@ -152,12 +165,12 @@
     "scorer": "Goleador probable",
     "correct_score": "Marcador exacto",
     "outcome": {
+      "12": "Sin empate",
       "home": "Gana {team}",
       "away": "Gana {team}",
       "draw": "Empate",
       "1X": "{team} o empate",
       "X2": "{team} o empate",
-      "12": "Sin empate",
       "over": "Más de {line}",
       "under": "Menos de {line}",
       "yes": "Sí",
@@ -202,7 +215,9 @@
       "unavailable": "No hay suficientes selecciones de partidos distintos que cumplan el umbral hoy."
     },
     "clipboardHeader": "Ventaja · {date}",
-    "clipboardFooter": "Análisis estadístico. No garantiza resultados. 21+."
+    "clipboardFooter": "Análisis estadístico. No garantiza resultados. 21+.",
+    "saveCombo": "Guardar combinada",
+    "comboSaved": "Guardada"
   },
   "buscar": {
     "title": "Buscar",
@@ -220,7 +235,7 @@
   },
   "historial": {
     "title": "Historial",
-    "subtitle": "Cada pick cerrado, con su resultado. Público y sin filtros.",
+    "subtitle": "Todo lo que el sistema predice queda registrado: picks cerrados, picks en juego y combinadas. Público y sin filtros.",
     "hitRate": "Acierto global",
     "roi": "ROI simulado",
     "roiHint": "Stake 1u a cuota cerrada",
@@ -236,7 +251,21 @@
     "miss": "Fallo",
     "void": "Nulo",
     "showing": "Mostrando los últimos {count}",
-    "pending": "{count} picks pendientes de cierre"
+    "pending": "{count} picks pendientes de cierre",
+    "tabsLabel": "Secciones del historial",
+    "tabClosed": "Picks cerrados",
+    "tabOpen": "En juego",
+    "tabCombos": "Combinadas",
+    "openHint": "Picks publicados cuyo partido aún no se juega. Cuando termine, pasan a «Picks cerrados» con su resultado.",
+    "openEmpty": "Ahora mismo no hay picks en juego. Aparecen cuando llegan las cuotas de los próximos partidos.",
+    "combosHint": "Las combinadas que el sistema propone cada día se guardan antes del pitazo y no se pueden editar después.",
+    "combosEmpty": "Todavía no hay combinadas registradas. Se guardan cada día que haya suficientes picks de partidos distintos.",
+    "combosHitRate": "Combinadas ganadas",
+    "combosClosed": "Combinadas cerradas",
+    "combosPending": "Combinadas en juego",
+    "kickoff": "Pitazo",
+    "lockedOpen": "{count, plural, =0 {No hay picks en juego ahora mismo.} =1 {Hay # pick en juego.} other {Hay # picks en juego.}} El detalle se ve con acceso activo; cuando el partido termina, cada pick pasa a este historial público con su resultado.",
+    "lockedCombo": "Las combinadas que siguen en juego se muestran con acceso activo. Cuando termina el último partido, pasan a este registro público con su resultado."
   },
   "cuenta": {
     "title": "Cuenta",
@@ -375,5 +404,32 @@
     "concuerda": "Concuerda",
     "cautela": "Cautela",
     "discrepa": "Discrepa"
+  },
+  "jugadas": {
+    "title": "Mis jugadas",
+    "subtitle": "Las jugadas y combinadas que marcaste, con su resultado final y tu porcentaje de victoria.",
+    "winRate": "Porcentaje de victoria",
+    "winRateHint": "{hits} ganadas de {decided} con resultado",
+    "units": "Balance",
+    "unitsHint": "Unidades, con stake 1u por jugada",
+    "pending": "En juego",
+    "total": "Marcadas",
+    "singles": "Jugadas",
+    "combos": "Combinadas",
+    "emptySingles": "Aún no marcaste jugadas. Entra a un partido o a Picks y pulsa «Marcar».",
+    "emptyCombos": "Aún no guardaste combinadas. Están en Picks, pestaña Combinadas.",
+    "mark": "Marcar",
+    "marked": "Marcada",
+    "markHint": "Guardar esta jugada en Mis jugadas",
+    "unmarkHint": "Quitar esta jugada de Mis jugadas",
+    "remove": "Quitar",
+    "locked": "Cerrada",
+    "statusPending": "Pendiente",
+    "statusAcierto": "Ganada",
+    "statusFallo": "Perdida",
+    "statusNulo": "Nula",
+    "kindPropia": "Combinada propia",
+    "selections": "{count, plural, =1 {# selección} other {# selecciones}}",
+    "atMark": "al marcar"
   }
 }
