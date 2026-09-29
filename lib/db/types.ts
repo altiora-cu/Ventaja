@@ -27,6 +27,8 @@ export interface League {
   season: number;
   odds_sport_key: string | null;
   fd_code: string | null;
+  /** Pide cuotas a The Odds API (presupuesto de créditos). Sin cuotas no hay ventaja ni sellos. */
+  odds_enabled?: boolean;
   active: boolean;
 }
 
