@@ -36,7 +36,8 @@ const ODDS_MIN_CREDITS = Number(process.env.ODDS_MIN_CREDITS) || 50;
 export async function ingestOdds(): Promise<OddsReport> {
   const admin = createAdminClient();
   const report: OddsReport = { sports: 0, eventsMatched: 0, quotesUpserted: 0, extraEvents: 0, skipped: [], errors: [], usage: oddsUsage() };
-  const leagues = (await activeLeagues(admin)).filter((l): l is League & { odds_sport_key: string } => Boolean(l.odds_sport_key));
+  // Solo ligas con cobertura y con cuotas habilitadas (presupuesto de créditos, migración 0008).
+  const leagues = (await activeLeagues(admin)).filter((l): l is League & { odds_sport_key: string } => Boolean(l.odds_sport_key) && l.odds_enabled !== false);
   const now = new Date();
   const todayEnd = new Date(now.getTime() + 24 * 3600_000);
 

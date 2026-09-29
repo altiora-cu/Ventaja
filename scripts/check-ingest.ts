@@ -35,12 +35,21 @@ async function main() {
   console.log(process.env.DATA_SOURCE === 'api_football' ? 'API-Football (DATA_SOURCE=api_football)' : `The Odds API${process.env.FOOTBALL_DATA_KEY ? ' + football-data.org (Premier)' : ' (sin FOOTBALL_DATA_KEY: la Premier también sale de The Odds API)'}`);
 
   section('Conexión a Supabase');
-  const { data: leagues, error: lErr } = await admin.from('leagues').select('id,name,season,odds_sport_key,fd_code,active').order('id');
+  const { data: leagues, error: lErr } = await admin.from('leagues').select('id,name,season,odds_sport_key,fd_code,odds_enabled,active').order('id');
   if (lErr) {
     console.error('No se pudo leer `leagues`. ¿Ejecutaste supabase/migrations/0001_init.sql?', lErr.message);
     process.exit(1);
   }
   console.table(leagues);
+  // Presupuesto mensual estimado de The Odds API en modo económico: cuotas 2 créditos/liga/día + resultados 2 créditos/liga por día con partidos.
+  const regions = (process.env.ODDS_REGIONS ?? 'us,eu').split(',').length;
+  const markets = (process.env.ODDS_MARKETS ?? 'h2h,totals,spreads').split(',').length;
+  const oddsLeagues = (leagues ?? []).filter((l) => l.active && l.odds_sport_key && l.odds_enabled !== false);
+  const oddsOnlyLeagues = oddsLeagues.filter((l) => !l.fd_code);
+  const perCall = regions * markets;
+  const est = oddsLeagues.length * perCall * 30 * (24 / (Number(process.env.ODDS_TTL_HOURS) || 2)) + oddsOnlyLeagues.length * 2 * 12;
+  console.log(`Ligas con cuotas: ${oddsLeagues.length} (${oddsLeagues.map((l) => l.name).join(', ') || 'ninguna'})`);
+  console.log(`Estimación de créditos/mes de The Odds API: ~${Math.round(est)} (plan gratis: 500). ${est > 450 ? 'SUPERA el plan gratis: desactiva ligas con `update leagues set odds_enabled=false where id=...` o sube ODDS_TTL_HOURS.' : 'Cabe en el plan gratis.'}`);
 
   if (!skipRun) {
     const { ingestStats, ingestFixtures } = await import('@/lib/data/ingest');
@@ -113,8 +122,8 @@ async function main() {
   }
   for (const [lid, e] of byLeague) {
     const l = (leagues ?? []).find((x) => x.id === lid);
-    console.log(`\n${leagueName.get(lid)} · ${e.total} partidos en 7 días · ${e.enVentana} en ventana de cuotas (≤3 días) · ${e.conCuotas} con cuotas · ${e.conPrediccion} con predicción${l?.odds_sport_key ? '' : ' · (liga sin cobertura de The Odds API: solo probabilidades)'}`);
-    if (l?.odds_sport_key && e.sinCuotasEnVentana.length) {
+    console.log(`\n${leagueName.get(lid)} · ${e.total} partidos en 7 días · ${e.enVentana} en ventana de cuotas (≤3 días) · ${e.conCuotas} con cuotas · ${e.conPrediccion} con predicción${!l?.odds_sport_key ? ' · (liga sin cobertura de The Odds API: solo probabilidades)' : l.odds_enabled === false ? ' · (cuotas desactivadas por presupuesto)' : ''}`);
+    if (l?.odds_sport_key && l.odds_enabled !== false && e.sinCuotasEnVentana.length) {
       console.log('  En ventana y sin cuotas (posible nombre sin emparejar, o la casa aún no publicó cuota):');
       for (const s of e.sinCuotasEnVentana.slice(0, 10)) console.log(`   - ${s}`);
     }
