@@ -93,7 +93,8 @@
     "matchesCount": "{count, plural, =1 {# partido} other {# partidos}}",
     "aiCaution": "IA: cautela",
     "aiDisagree": "IA: discrepa",
-    "smallSample": "Muestra pequeña"
+    "smallSample": "Muestra pequeña",
+    "aiWebTag": "IA web"
   },
   "partido": {
     "title": "Ficha de partido",
@@ -147,7 +148,12 @@
     "riskMedio": "Riesgo medio",
     "missingMarkets": "Sin datos para: {markets}. Las fuentes actuales no entregan esas estadísticas, y el modelo prefiere no mostrar un número antes que inventarlo.",
     "aiPlayMissing": "Sin revisión IA todavía.",
-    "aiPlaysHint": "Cada jugada recomendada pasa por la Revisión IA. La IA no cambia probabilidades: solo puede bajar el sello o sacar la jugada de esta lista."
+    "aiPlaysHint": "Cada jugada recomendada pasa por la Revisión IA. La IA no cambia probabilidades: solo puede bajar el sello o sacar la jugada de esta lista.",
+    "aiWeb": "Análisis IA con búsqueda web",
+    "aiWebPick": "Jugada orientativa",
+    "aiWebEstimate": "Estimación IA",
+    "aiWebSources": "Fuentes consultadas",
+    "aiWebDisclaimer": "Este partido no tiene cuotas en Ventaja. La IA investigó en la web forma, bajas y contexto y propone una jugada orientativa con tope de confianza MEDIA. No es una ventaja calculada y no entra en el Historial verificado."
   },
   "markets": {
     "1x2": "Resultado (1X2)",

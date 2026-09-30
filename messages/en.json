@@ -93,7 +93,8 @@
     "matchesCount": "{count, plural, =1 {# match} other {# matches}}",
     "aiCaution": "AI: caution",
     "aiDisagree": "AI: disagrees",
-    "smallSample": "Small sample"
+    "smallSample": "Small sample",
+    "aiWebTag": "AI web"
   },
   "partido": {
     "title": "Match sheet",
@@ -147,7 +148,12 @@
     "riskMedio": "Medium risk",
     "missingMarkets": "No data for: {markets}. The current sources do not provide those stats, and the model would rather show nothing than make up a number.",
     "aiPlayMissing": "No AI review yet.",
-    "aiPlaysHint": "Every recommended play goes through the AI Review. The AI does not change probabilities: it can only lower the seal or remove the play from this list."
+    "aiPlaysHint": "Every recommended play goes through the AI Review. The AI does not change probabilities: it can only lower the seal or remove the play from this list.",
+    "aiWeb": "AI web-search analysis",
+    "aiWebPick": "Suggested play",
+    "aiWebEstimate": "AI estimate",
+    "aiWebSources": "Sources consulted",
+    "aiWebDisclaimer": "This match has no odds in Ventaja. The AI researched form, absences and context on the web and suggests a play capped at MEDIUM confidence. It is not a calculated edge and does not enter the verified track record."
   },
   "markets": {
     "1x2": "Result (1X2)",

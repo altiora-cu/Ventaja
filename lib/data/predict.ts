@@ -7,6 +7,8 @@ import { generarLectura } from '@/lib/engine/lectura';
 import { selectionKey } from '@/lib/engine/edge';
 import { MAX_PLAYS_REVIEWED, playsKey, type PlayFacts } from '@/lib/engine/plays-review';
 import { revisarJugadas, revisarPick, revisionEnabled } from '@/lib/engine/revision';
+import { analizarConWeb, webAnalysisEnabled } from '@/lib/engine/web-analysis';
+import { webAnalysisKey, type WebAnalysisFacts } from '@/lib/engine/web-analysis-prompt';
 import { revisionKey, type RevisionFacts } from '@/lib/engine/revision-prompt';
 import type { LecturaFacts } from '@/lib/engine/lectura-prompt';
 import { selectionLabel } from '@/lib/labels';
@@ -20,6 +22,7 @@ export interface PredictReport {
   predictions: number;
   lecturas: number;
   revisiones: number;
+  webAnalyses: number;
   /** Jugadas recomendadas que recibieron veredicto de la IA. */
   jugadasRevisadas: number;
   errors: string[];
@@ -27,6 +30,8 @@ export interface PredictReport {
 
 /** Máximo de revisiones IA por corrida (control de coste). */
 const AI_REVIEW_MAX = Number(process.env.AI_REVIEW_MAX) || 40;
+/** Máximo de análisis con búsqueda web por corrida (cada uno hace hasta 3 búsquedas). */
+const AI_WEB_MAX = Number(process.env.AI_WEB_MAX) || 15;
 const DAY_MS = 24 * 3600_000;
 
 type FixtureRow = Fixture & { home: Team; away: Team; league: League };
@@ -56,7 +61,7 @@ function toTeamInput(team: Team, ts: TeamStats | undefined, missing: number): Te
 /** Recalcula predicciones y Lecturas de los partidos entre hoy y +3 días (o de una fecha concreta). */
 export async function runPredictions(dateKey?: string): Promise<PredictReport> {
   const admin = createAdminClient();
-  const report: PredictReport = { fixtures: 0, predictions: 0, lecturas: 0, revisiones: 0, jugadasRevisadas: 0, errors: [] };
+  const report: PredictReport = { fixtures: 0, predictions: 0, lecturas: 0, revisiones: 0, webAnalyses: 0, jugadasRevisadas: 0, errors: [] };
   const leagues = await activeLeagues(admin);
 
   const now = new Date();
@@ -211,6 +216,38 @@ export async function runPredictions(dateKey?: string): Promise<PredictReport> {
         aiReview = null;
       }
 
+      // Análisis IA con búsqueda web: solo ligas marcadas, partidos sin cuotas y a ≤ 3 días. Una vez al día.
+      let aiWeb = prev?.ai_web ?? null;
+      const hoursToKickoff = (new Date(f.kickoff).getTime() - Date.now()) / 3600_000;
+      if (f.league.ai_web && quotes.length === 0 && hoursToKickoff <= 72 && webAnalysisEnabled()) {
+        const get = (market: string, selection: string, line: number | null = null) => result.priced.find((p) => p.market === market && p.selection === selection && (line === null ? p.line === null : p.line === line))?.prob ?? 0;
+        const wfacts: WebAnalysisFacts = {
+          home: f.home.name,
+          away: f.away.name,
+          league: f.league.name,
+          kickoffIso: f.kickoff,
+          kickoffLabel: new Intl.DateTimeFormat('es-US', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'America/New_York' }).format(new Date(f.kickoff)) + ' ET',
+          probHome: get('1x2', 'home'),
+          probDraw: get('1x2', 'draw'),
+          probAway: get('1x2', 'away'),
+          probOver25: get('totals', 'over', 2.5),
+          homeForm: tsHome?.form ?? '',
+          awayForm: tsAway?.form ?? '',
+          homePlayed: tsHome?.played ?? 0,
+          awayPlayed: tsAway?.played ?? 0,
+        };
+        const wkey = webAnalysisKey(wfacts, toDateKey(new Date()));
+        if ((!aiWeb || aiWeb.key !== wkey) && report.webAnalyses < AI_WEB_MAX) {
+          const w = await analizarConWeb(wfacts, toDateKey(new Date()));
+          if (w) {
+            aiWeb = w;
+            report.webAnalyses++;
+          }
+        }
+      } else if (quotes.length > 0) {
+        aiWeb = null; // con cuotas manda el modelo
+      }
+
       await admin.from('fixture_analysis').upsert(
         {
           fixture_id: f.id,
@@ -223,6 +260,7 @@ export async function runPredictions(dateKey?: string): Promise<PredictReport> {
           lectura_sello: pick?.sello ?? null,
           top_market: topMarket ? { ...topMarket, small_sample: smallSample, min_played: minPlayed } : null,
           ai_review: aiReview,
+          ai_web: aiWeb,
           calculated_at: new Date().toISOString(),
         },
         { onConflict: 'fixture_id' },

@@ -13,6 +13,7 @@ import { Comparador } from '@/components/partido/Comparador';
 import { TeamHistory } from '@/components/partido/TeamHistory';
 import { ShareButton } from '@/components/partido/ShareButton';
 import { RevisionIA } from '@/components/partido/RevisionIA';
+import { AnalisisWeb } from '@/components/partido/AnalisisWeb';
 import { getViewer } from '@/lib/auth/viewer';
 import { getMarkedPredictionIds } from '@/lib/data/jugadas';
 import { getFixtureDetail } from '@/lib/data/queries';
@@ -142,6 +143,8 @@ export default async function PartidoPage({ params, searchParams }: { params: { 
       {top?.small_sample && <p className="rounded-md border border-border bg-elevated px-4 py-3 text-sm text-muted">{t('smallSample')}</p>}
 
       {review && <RevisionIA review={review} />}
+
+      {analysis?.ai_web && <AnalisisWeb analysis={analysis.ai_web} home={f.home.name} away={f.away.name} />}
 
       {analysis?.scores && <Marcador scores={analysis.scores} home={f.home.name} away={f.away.name} />}
 
