@@ -61,3 +61,25 @@ export function selectionLabel(market: string, selection: string, line: number |
       return `${market} ${selection} ${L}`.trim();
   }
 }
+
+/** Etiqueta de la jugada orientativa del Análisis IA con búsqueda web. */
+export function webPickLabel(pick: string, ctx: LabelCtx, locale: Locale = 'es'): string {
+  switch (pick) {
+    case 'home':
+      return selectionLabel('1x2', 'home', null, ctx, locale);
+    case 'away':
+      return selectionLabel('1x2', 'away', null, ctx, locale);
+    case 'draw':
+      return selectionLabel('1x2', 'draw', null, ctx, locale);
+    case 'over25':
+      return selectionLabel('totals', 'over', 2.5, ctx, locale);
+    case 'under25':
+      return selectionLabel('totals', 'under', 2.5, ctx, locale);
+    case 'btts_yes':
+      return selectionLabel('btts', 'yes', null, ctx, locale);
+    case 'btts_no':
+      return selectionLabel('btts', 'no', null, ctx, locale);
+    default:
+      return pick;
+  }
+}

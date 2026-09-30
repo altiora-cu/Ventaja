@@ -67,6 +67,10 @@ emails/              plantillas de recordatorio (día 26, 29 y 31)
 
 Además de la Lectura, Claude audita el pick principal de cada partido con forma, bajas, cuotas y probabilidades del modelo y devuelve un veredicto (concuerda / cautela / discrepa), riesgos concretos y un **sello final que solo puede bajar**. Se guarda en `fixture_analysis.ai_review`, se cachea por contexto y se regenera solo si cambian el pick, el sello, las bajas o las cuotas. Sin `ANTHROPIC_API_KEY` la app muestra el sello del modelo sin cambios. Coste estimado con Haiku: < 3 USD/mes.
 
+## Análisis IA con búsqueda web (partidos sin cuotas)
+
+Para las ligas marcadas con `leagues.ai_web = true` (por defecto, las activas sin cuotas por presupuesto: Brasil, Argentina, Europa, Sudamericana...), la IA investiga en la web forma, bajas y contexto de cada partido a ≤ 3 días y propone una jugada orientativa (1X2, más/menos 2.5, ambos anotan) con estimación y tope de confianza **MEDIA**. Se muestra en la ficha y con la etiqueta "IA web" en la Jornada. No es una ventaja calculada ni entra en el Historial verificado. Coste: hasta 3 búsquedas por partido (~1 USD por 100 búsquedas) más tokens de Haiku; tope por corrida `AI_WEB_MAX` (15). Se desactiva con `VENTAJA_AI_WEB=false`. Migración `0009_ai_web.sql`.
+
 ## Guías
 
 - `docs/SUPABASE_SETUP.md`: configuración paso a paso desde el panel (Supabase, Google OAuth, Vercel).

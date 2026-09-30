@@ -29,6 +29,8 @@ export interface League {
   fd_code: string | null;
   /** Pide cuotas a The Odds API (presupuesto de créditos). Sin cuotas no hay ventaja ni sellos. */
   odds_enabled?: boolean;
+  /** Análisis IA con búsqueda web para partidos sin cuotas. */
+  ai_web?: boolean;
   active: boolean;
 }
 
@@ -211,6 +213,18 @@ import type { AiReview } from '@/lib/engine/revision-prompt';
 export type { AiReview, AiVerdict } from '@/lib/engine/revision-prompt';
 export type { AiPlayReview } from '@/lib/engine/plays-review';
 
+export interface AiWebAnalysis {
+  pick: 'home' | 'away' | 'draw' | 'over25' | 'under25' | 'btts_yes' | 'btts_no';
+  prob: number;
+  confidence: 'media' | 'baja';
+  summary: string;
+  risks: string[];
+  sources: string[];
+  model: string;
+  key: string;
+  at: string;
+}
+
 export interface FixtureAnalysis {
   fixture_id: number;
   lambda_home: number | null;
@@ -220,6 +234,8 @@ export interface FixtureAnalysis {
   lectura_en: string | null;
   lectura_locale: string | null;
   ai_review: AiReview | null;
+  /** Análisis IA con búsqueda web (solo partidos sin cuotas; tope MEDIA; fuera del Historial). */
+  ai_web?: AiWebAnalysis | null;
   lectura_sello: string | null;
   top_market: TopMarket | null;
   calculated_at: string;
