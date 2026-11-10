@@ -6,6 +6,7 @@ import { BottomNav, Sidebar } from './Nav';
 import { Footer } from './Footer';
 import { TrialBanner } from './TrialBanner';
 import { RecordatorioPago } from './RecordatorioPago';
+import { JugadasBubble } from './JugadasBubble';
 
 export async function AppShell({ children }: { children: ReactNode }) {
   const viewer = await getViewer();
@@ -28,6 +29,7 @@ export async function AppShell({ children }: { children: ReactNode }) {
       </div>
       <Footer />
       <BottomNav />
+      <JugadasBubble viewer={viewer} />
       {viewer.showReminder && access.daysLeft !== null && <RecordatorioPago days={access.daysLeft} isRenewal={access.isRenewal} whatsappUrl={whatsappLink(email)} />}
     </div>
   );

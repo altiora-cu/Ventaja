@@ -93,6 +93,8 @@ async function hasPendingCombo(supabase: ReturnType<typeof createClient>, userId
 }
 
 function revalidatePlays(fixtureIds: number[]): void {
+  // La burbuja de jugadas vive en el layout: hay que refrescarlo en cualquier página.
+  revalidatePath('/', 'layout');
   revalidatePath('/mis-jugadas');
   revalidatePath('/picks');
   for (const id of new Set(fixtureIds)) revalidatePath(`/partido/${id}`);
@@ -136,6 +138,37 @@ export async function togglePlay(predictionId: number): Promise<PlayActionResult
   }
 }
 
+/** Inserta la combinada a partir de predicciones ya leídas de la base de datos y validadas. */
+async function insertCombo(userId: string, preds: Prediction[], kind: UserComboKind): Promise<PlayActionResult> {
+  const supabase = createClient();
+  const fixtureIds = preds.map((p) => p.fixture_id);
+  if (new Set(fixtureIds).size !== fixtureIds.length) return { ok: false, error: ERRORS.sameFixture };
+  const { data: fixtures } = await supabase.from('fixtures').select('id,status,kickoff').in('id', fixtureIds).returns<PlayFixture[]>();
+  if (!fixtures || fixtures.length !== fixtureIds.length) return { ok: false, error: ERRORS.notFound };
+  if (!fixtures.every(isOpen)) return { ok: false, error: ERRORS.started };
+
+  if (await hasPendingCombo(supabase, userId, preds)) return { ok: true, marked: true };
+
+  const jointProb = preds.reduce((acc, p) => acc * Number(p.prob), 1);
+  const totalPrice = preds.every((p) => p.best_price) ? preds.reduce((acc, p) => acc * Number(p.best_price), 1) : null;
+  const admin = writer();
+  const { data: combo, error: comboErr } = await admin
+    .from('user_combos')
+    .insert({ user_id: userId, kind, joint_prob: jointProb, total_price: totalPrice })
+    .select('id')
+    .single<{ id: number }>();
+  if (comboErr || !combo) return { ok: false, error: ERRORS.generic };
+
+  const { error: legsErr } = await admin.from('user_picks').insert(preds.map((p) => pickRow(userId, p, combo.id)));
+  if (legsErr) {
+    // Sin selecciones la combinada no tiene sentido: se deshace.
+    await admin.from('user_combos').delete().eq('id', combo.id).eq('user_id', userId);
+    return { ok: false, error: ERRORS.generic };
+  }
+  revalidatePlays(fixtureIds);
+  return { ok: true, marked: true };
+}
+
 /** Guarda una combinada con las predicciones indicadas (una por partido). */
 export async function saveCombo(predictionIds: number[], kind: UserComboKind = 'propia'): Promise<PlayActionResult> {
   try {
@@ -143,38 +176,48 @@ export async function saveCombo(predictionIds: number[], kind: UserComboKind = '
     if (ids.length < MIN_COMBO_LEGS || ids.length > MAX_COMBO_LEGS || !ids.every(isPositiveInt) || !COMBO_KINDS.includes(kind)) return { ok: false, error: ERRORS.invalid };
     const auth = await requireUserId();
     if ('error' in auth) return { ok: false, error: auth.error };
-    const supabase = createClient();
 
-    const { data: preds } = await supabase.from('predictions').select('*').in('id', ids).returns<Prediction[]>();
+    const { data: preds } = await createClient().from('predictions').select('*').in('id', ids).returns<Prediction[]>();
     if (!preds || preds.length !== ids.length) return { ok: false, error: ERRORS.notFound };
-    const fixtureIds = preds.map((p) => p.fixture_id);
-    if (new Set(fixtureIds).size !== fixtureIds.length) return { ok: false, error: ERRORS.sameFixture };
-    const { data: fixtures } = await supabase.from('fixtures').select('id,status,kickoff').in('id', fixtureIds).returns<PlayFixture[]>();
-    if (!fixtures || fixtures.length !== fixtureIds.length) return { ok: false, error: ERRORS.notFound };
-    if (!fixtures.every(isOpen)) return { ok: false, error: ERRORS.started };
-
-    if (await hasPendingCombo(supabase, auth.userId, preds)) return { ok: true, marked: true };
-
-    const jointProb = preds.reduce((acc, p) => acc * Number(p.prob), 1);
-    const totalPrice = preds.every((p) => p.best_price) ? preds.reduce((acc, p) => acc * Number(p.best_price), 1) : null;
-    const admin = writer();
-    const { data: combo, error: comboErr } = await admin
-      .from('user_combos')
-      .insert({ user_id: auth.userId, kind, joint_prob: jointProb, total_price: totalPrice })
-      .select('id')
-      .single<{ id: number }>();
-    if (comboErr || !combo) return { ok: false, error: ERRORS.generic };
-
-    const { error: legsErr } = await admin.from('user_picks').insert(preds.map((p) => pickRow(auth.userId, p, combo.id)));
-    if (legsErr) {
-      // Sin selecciones la combinada no tiene sentido: se deshace.
-      await admin.from('user_combos').delete().eq('id', combo.id).eq('user_id', auth.userId);
-      return { ok: false, error: ERRORS.generic };
-    }
-    revalidatePlays(fixtureIds);
-    return { ok: true, marked: true };
+    return await insertCombo(auth.userId, preds, kind);
   } catch (e) {
     console.error('[jugadas:saveCombo]', e);
+    return { ok: false, error: ERRORS.generic };
+  }
+}
+
+/**
+ * Convierte jugadas sueltas ya marcadas (ids de `user_picks`) en una combinada propia.
+ * Las jugadas sueltas se conservan: la combinada es una apuesta aparte.
+ */
+export async function saveComboFromPicks(pickIds: number[]): Promise<PlayActionResult> {
+  try {
+    const ids = Array.isArray(pickIds) ? [...new Set(pickIds)] : [];
+    if (ids.length < MIN_COMBO_LEGS || ids.length > MAX_COMBO_LEGS || !ids.every(isPositiveInt)) return { ok: false, error: ERRORS.invalid };
+    const auth = await requireUserId();
+    if ('error' in auth) return { ok: false, error: auth.error };
+    const supabase = createClient();
+
+    const { data: picks } = await supabase
+      .from('user_picks')
+      .select('id,fixture_id,market,selection,line,player_id,result')
+      .eq('user_id', auth.userId)
+      .is('combo_id', null)
+      .in('id', ids)
+      .returns<Array<Pick<Prediction, 'fixture_id' | 'market' | 'selection' | 'line' | 'player_id'> & { id: number; result: string | null }>>();
+    if (!picks || picks.length !== ids.length || picks.some((p) => p.result !== null)) return { ok: false, error: ERRORS.notFound };
+
+    const { data: candidates } = await supabase
+      .from('predictions')
+      .select('*')
+      .in('fixture_id', [...new Set(picks.map((p) => p.fixture_id))])
+      .returns<Prediction[]>();
+    const byKey = new Map((candidates ?? []).map((p) => [legKey(p), p]));
+    const preds = picks.map((p) => byKey.get(legKey(p)));
+    if (preds.some((p) => !p)) return { ok: false, error: ERRORS.notFound };
+    return await insertCombo(auth.userId, preds as Prediction[], 'propia');
+  } catch (e) {
+    console.error('[jugadas:saveComboFromPicks]', e);
     return { ok: false, error: ERRORS.generic };
   }
 }

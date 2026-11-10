@@ -50,7 +50,8 @@
     "goals": "Goals",
     "and": "and",
     "install": "Install app",
-    "skipToContent": "Skip to content"
+    "skipToContent": "Skip to content",
+    "prob": "Prob."
   },
   "nav": {
     "jornada": "Matchday",
@@ -137,9 +138,6 @@
     "aiSelloNote": "Model seal {modelo} → final seal {final}",
     "aiDisclaimer": "The AI audits the main pick and every recommended play using form, absences and odds. It can only lower the seal, never raise it. It is not a prediction.",
     "smallSample": "Small sample: one of the teams has fewer than 5 matches with data. Probability is blended with market odds until the sample fills in.",
-    "viewAnalysis": "Full analysis",
-    "viewBest": "Best plays",
-    "viewLabel": "Match view",
     "bestTitle": "Best plays for this match",
     "bestHint": "Only plays with an edge over the odds, a probability of 60% or more and an available price. One per market, most likely first.",
     "bestEmpty": "This match has no plays worth making: none combines enough edge and probability. Not forcing it is also an edge.",
@@ -153,7 +151,8 @@
     "aiWebPick": "Suggested play",
     "aiWebEstimate": "AI estimate",
     "aiWebSources": "Sources consulted",
-    "aiWebDisclaimer": "This match has no odds in Ventaja. The AI researched form, absences and context on the web and suggests a play capped at MEDIUM confidence. It is not a calculated edge and does not enter the verified track record."
+    "aiWebDisclaimer": "This match has no odds in Ventaja. The AI researched form, absences and context on the web and suggests a play capped at MEDIUM confidence. It is not a calculated edge and does not enter the verified track record.",
+    "analysisTitle": "Match analysis"
   },
   "markets": {
     "1x2": "Result (1X2)",
@@ -200,7 +199,7 @@
   },
   "picks": {
     "title": "Best picks",
-    "subtitle": "Only markets with edge ≥ 5% and probability ≥ 55%.",
+    "subtitle": "Only markets with edge ≥ 5% and probability ≥ 55%. Matches already started go last.",
     "singles": "Singles",
     "combos": "Parlays",
     "filterSello": "Seal",
@@ -223,7 +222,8 @@
     "clipboardHeader": "Ventaja · {date}",
     "clipboardFooter": "Statistical analysis. No guaranteed results. 21+.",
     "saveCombo": "Save parlay",
-    "comboSaved": "Saved"
+    "comboSaved": "Saved",
+    "inPlay": "In play"
   },
   "buscar": {
     "title": "Search",
@@ -436,6 +436,30 @@
     "statusNulo": "Void",
     "kindPropia": "Own parlay",
     "selections": "{count, plural, =1 {# selection} other {# selections}}",
-    "atMark": "when marked"
+    "atMark": "when marked",
+    "inPlay": "In play",
+    "closed": "Closed",
+    "noDecided": "No settled plays yet",
+    "confirmRemove": "Remove?",
+    "emptyInPlay": "Nothing in play right now. Mark plays from a match or from Picks."
+  },
+  "boleto": {
+    "pill": "{count, plural, =1 {# play} other {# plays}}",
+    "pillCombos": "{count, plural, =1 {# parlay} other {# parlays}}",
+    "openLabel": "Open the ticket: {count, plural, =0 {no open plays} =1 {# open play} other {# open plays}}",
+    "title": "Your ticket",
+    "subtitle": "{count, plural, =1 {# open play} other {# open plays}}, soonest first.",
+    "subtitleEmpty": "No open single plays.",
+    "emptyPlays": "Mark plays from a match or from Picks and they will show up here.",
+    "jointProb": "Joint probability",
+    "totalOdds": "Combined odds",
+    "noOdds": "No odds",
+    "openCombos": "You also have {count, plural, =1 {# parlay} other {# parlays}} in play.",
+    "sameFixture": "To save a parlay keep one play per match.",
+    "saveCombo": "Save as parlay",
+    "comboSaved": "Parlay saved",
+    "viewAll": "View My plays",
+    "confirmRemove": "Remove?",
+    "removeLabel": "Remove {label}"
   }
 }

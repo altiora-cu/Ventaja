@@ -47,6 +47,9 @@ export default async function MisJugadasPage() {
   const timeZone = getTimeZone();
   const now = Date.now();
   const { overall, singles, combos } = data;
+  // En juego: sin resultado y con partido por delante, de la más próxima a la más lejana. El resto, cerradas (o empezadas).
+  const open = singles.filter((p) => canRemove(p, now)).sort((a, b) => new Date(a.fixture!.kickoff).getTime() - new Date(b.fixture!.kickoff).getTime());
+  const closed = singles.filter((p) => !canRemove(p, now));
   const labels = { pendiente: t('statusPending'), acierto: t('statusAcierto'), fallo: t('statusFallo'), nulo: t('statusNulo'), jointProb: tp('jointProb'), totalOdds: tp('totalOdds') };
 
   return (
@@ -58,23 +61,31 @@ export default async function MisJugadasPage() {
 
       <StatTiles
         tiles={[
-          { label: t('winRate'), value: pct(overall.hitRate), hint: t('winRateHint', { hits: overall.hits, decided: overall.decided }), accent: true },
+          { label: t('winRate'), value: overall.decided > 0 ? pct(overall.hitRate) : '—', hint: overall.decided > 0 ? t('winRateHint', { hits: overall.hits, decided: overall.decided }) : t('noDecided'), accent: overall.decided > 0 },
           { label: t('units'), value: `${fmtUnits(overall.units)}u`, hint: t('unitsHint') },
           { label: t('pending'), value: String(overall.pending) },
           { label: t('total'), value: String(overall.total) },
         ]}
       />
 
-      <section className="space-y-3" aria-labelledby="jugadas-sueltas">
-        <h2 id="jugadas-sueltas" className="flex items-baseline justify-between text-sm font-medium text-muted">
-          <span>{t('singles')}</span>
-          <span className="num text-xs text-faint">{pct(data.singlesSummary.hitRate)}</span>
-        </h2>
-        {singles.length === 0 ? (
-          <p className="card p-8 text-center text-muted">{t('emptySingles')}</p>
-        ) : (
-          <ul className="grid gap-2 lg:grid-cols-2">
-            {singles.map((p) => (
+      {(
+        [
+          { id: 'jugadas-en-juego', title: t('inPlay'), list: open, empty: t('emptyInPlay'), rate: null },
+          { id: 'jugadas-cerradas', title: t('closed'), list: closed, empty: t('emptySingles'), rate: data.singlesSummary.decided > 0 ? pct(data.singlesSummary.hitRate) : null },
+        ] as const
+      ).map(({ id, title, list, empty, rate }) => (
+        <section key={id} className="space-y-3" aria-labelledby={id}>
+          <h2 id={id} className="flex items-baseline justify-between text-sm font-medium text-muted">
+            <span>
+              {title} <span className="num text-xs text-faint">({list.length})</span>
+            </span>
+            {rate && <span className="num text-xs text-faint">{rate}</span>}
+          </h2>
+          {list.length === 0 ? (
+            <p className="card p-6 text-center text-sm text-muted">{empty}</p>
+          ) : (
+            <ul className="grid gap-2 lg:grid-cols-2">
+            {list.map((p) => (
               <li key={p.id} className="card p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
@@ -119,9 +130,10 @@ export default async function MisJugadasPage() {
                 </div>
               </li>
             ))}
-          </ul>
-        )}
-      </section>
+            </ul>
+          )}
+        </section>
+      ))}
 
       <section className="space-y-3" aria-labelledby="jugadas-combinadas">
         <h2 id="jugadas-combinadas" className="flex items-baseline justify-between text-sm font-medium text-muted">

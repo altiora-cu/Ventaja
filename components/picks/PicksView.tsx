@@ -11,7 +11,7 @@ import { IconBookmark, IconCopy, IconCheck } from '@/components/ui/Icons';
 import { buildCombos, COMBO_RULES, type ComboKind, type ComboSelection } from '@/lib/engine/combos';
 import type { AiPlayReview, Sello as SelloNivel } from '@/lib/db/types';
 import { selectionLabel } from '@/lib/labels';
-import { odds, pct, signedPct } from '@/lib/utils';
+import { fmtTime, odds, pct, signedPct } from '@/lib/utils';
 import type { Locale } from '@/i18n/config';
 import Link from 'next/link';
 
@@ -34,6 +34,7 @@ interface Props {
   locale: Locale;
   dateLabel: string;
   markedIds: number[];
+  timeZone: string;
 }
 
 /** Guarda combinadas en "Mis jugadas" y recuerda cuáles ya se guardaron en esta visita. */
@@ -66,7 +67,7 @@ function useCopy() {
   return { copied, copy };
 }
 
-export function PicksView({ rows, leagues, locale, dateLabel, markedIds }: Props) {
+export function PicksView({ rows, leagues, locale, dateLabel, markedIds, timeZone }: Props) {
   const t = useTranslations('picks');
   const tc = useTranslations('common');
   const ts = useTranslations('sello');
@@ -81,7 +82,11 @@ export function PicksView({ rows, leagues, locale, dateLabel, markedIds }: Props
   const marked = useMemo(() => new Set(markedIds), [markedIds]);
 
   const singles = useMemo(
-    () => rows.filter((r) => (sello === 'all' || r.sello === sello) && (league === 'all' || r.league_id === league)).sort((a, b) => b.edge - a.edge),
+    () =>
+      rows
+        .filter((r) => (sello === 'all' || r.sello === sello) && (league === 'all' || r.league_id === league))
+        // Las que ya empezaron no se pueden jugar: al final, y dentro de cada grupo por ventaja.
+        .sort((a, b) => Number(a.started) - Number(b.started) || b.edge - a.edge),
     [rows, sello, league],
   );
   const combos = useMemo(() => buildCombos(rows.filter((r) => !r.started && r.ai?.verdict !== 'discrepa')), [rows]);
@@ -131,11 +136,11 @@ export function PicksView({ rows, leagues, locale, dateLabel, markedIds }: Props
                 const key = `s-${r.id}`;
                 const text = clip([`${r.home} vs ${r.away} (${r.league})`, `${label(r)} @ ${odds(r.price)} · ${pct(r.prob)} · ${tc('edge')} ${signedPct(r.edge)}`]);
                 return (
-                  <StaggerItem key={key} className="card p-4">
+                  <StaggerItem key={key} className={`card p-4 ${r.started ? 'opacity-60' : ''}`}>
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
                         <Link href={`/partido/${r.fixture_id}`} className="text-xs text-muted hover:text-text">
-                          {r.home} vs {r.away} · {r.league}
+                          {r.home} vs {r.away} · {r.league} · <span className="num">{r.started ? t('inPlay') : fmtTime(r.kickoff, locale, timeZone)}</span>
                         </Link>
                         <p className="mt-1 truncate font-medium">{label(r)}</p>
                         <AiVerdictNote review={r.ai ?? undefined} labels={aiLabels} className="mt-1.5" />

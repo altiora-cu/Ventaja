@@ -49,7 +49,7 @@ export function MarkButton({ predictionId, initialMarked, locked = false, classN
         {marked ? t('marked') : t('mark')}
       </button>
       {error && (
-        <span role="alert" className="max-w-[180px] text-right text-xs text-fallo">
+        <span role="alert" className="max-w-[180px] text-right text-xs text-[var(--warning)]">
           {error}
         </span>
       )}
