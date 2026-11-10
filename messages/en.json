@@ -293,7 +293,11 @@
     "newPassword": "New password",
     "passwordUpdated": "Password updated.",
     "passwordTooShort": "At least 8 characters.",
-    "adminPanel": "Go to admin panel"
+    "adminPanel": "Go to admin panel",
+    "stakeTitle": "Stake and currency",
+    "stakeSubtitle": "How much you bet per play and in which currency. Each play keeps the stake at the time you marked it; you can change it until kickoff.",
+    "pushTitle": "Phone notifications",
+    "pushSubtitle": "One alert before your plays kick off and another when they settle."
   },
   "activar": {
     "title": "Your Ventaja trial has ended.",
@@ -441,7 +445,23 @@
     "closed": "Closed",
     "noDecided": "No settled plays yet",
     "confirmRemove": "Remove?",
-    "emptyInPlay": "Nothing in play right now. Mark plays from a match or from Picks."
+    "emptyInPlay": "Nothing in play right now. Mark plays from a match or from Picks.",
+    "balance": "Balance",
+    "staked": "{amount} staked",
+    "pendingHint": "{count} singles · {combos} parlays",
+    "record": "Win record",
+    "won": "Won",
+    "lost": "Lost",
+    "void": "Void",
+    "streak": "Streak",
+    "streakWin": "{count} wins in a row",
+    "streakLoss": "{count} losses in a row",
+    "streakHint": "Best: {best} · Worst: {worst}",
+    "month": "Month",
+    "recordCol": "W-L",
+    "withoutStake": "{count, plural, =1 {# play marked before stakes were enabled is left out of} other {# plays marked before stakes were enabled are left out of}} the money balance.",
+    "stakeLabel": "Stake",
+    "notRecommended": "Not recommended by the model (LOW seal)."
   },
   "boleto": {
     "pill": "{count, plural, =1 {# play} other {# plays}}",
@@ -460,6 +480,44 @@
     "comboSaved": "Parlay saved",
     "viewAll": "View My plays",
     "confirmRemove": "Remove?",
-    "removeLabel": "Remove {label}"
+    "removeLabel": "Remove {label}",
+    "warnBaja": "Not recommended: LOW seal",
+    "warnDiscrepa": "Not recommended: the AI review disagrees",
+    "warnSummary": "{count} of {total} {count, plural, =1 {play is not recommended} other {plays are not recommended}} by the model. A parlay inherits that risk.",
+    "payout": "Returns {amount} if it wins",
+    "comboPayout": "Parlay with {stake}: returns {amount} if it wins."
+  },
+  "preferencias": {
+    "currency": "Currency",
+    "usd": "US dollars (USD)",
+    "pen": "Peruvian soles (PEN)",
+    "currencyHint": "Changes the format only: balances are not converted between currencies.",
+    "defaultStake": "Default stake",
+    "defaultStakeHint": "Applied to every new play or parlay. Adjust a specific play from the ticket or My plays.",
+    "stakeInvalid": "Stake must be above 0 and at most 100,000.",
+    "notifications": "Alerts",
+    "notifyKickoff": "Before kickoff",
+    "notifyKickoffHint": "Today's plays, every morning (or 3 h before on the Pro plan).",
+    "notifyResults": "When settled",
+    "notifyResultsHint": "Won or lost, with the day's balance.",
+    "saved": "Saved"
+  },
+  "push": {
+    "checking": "Checking…",
+    "unsupported": "This browser does not support push alerts. On Android use Chrome; on iPhone install the app via Share → Add to Home Screen.",
+    "notConfigured": "Alerts are not configured on the server yet.",
+    "needsInstall": "On iPhone alerts only work from the installed app: Share → Add to Home Screen, then enable them there.",
+    "denied": "You blocked alerts in this browser. Enable them in the site settings and reload.",
+    "on": "Alerts enabled on this device",
+    "enable": "Enable alerts",
+    "disable": "Disable",
+    "sendTest": "Send test",
+    "testSent": "Test alert sent. If it does not arrive, check the browser permissions.",
+    "testFailed": "Could not send the test. Disable and enable again.",
+    "error": "Could not enable alerts."
+  },
+  "stake": {
+    "label": "Stake",
+    "invalid": "Between 0.5 and 100,000"
   }
 }

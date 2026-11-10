@@ -6,6 +6,7 @@ import { runPredictions } from '@/lib/data/predict';
 import { settlePicks } from '@/lib/data/settle';
 import { registerSystemCombos, settleUserPlays } from '@/lib/data/settle-user';
 import { runAccounts } from '@/lib/data/accounts';
+import { runPushNotifications } from '@/lib/push/notify';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -13,7 +14,7 @@ export const maxDuration = 300;
 
 /**
  * Cron diario único (plan Hobby de Vercel): calendario + resultados → cierre de picks, jugadas y combinadas →
- * estadísticas → cuotas → predicciones y Lecturas → registro de combinadas → cuentas y recordatorios.
+ * estadísticas → cuotas → predicciones y Lecturas → registro de combinadas → cuentas y recordatorios → avisos push.
  * El cierre va antes de las predicciones: es rápido y no debe perderse si el paso de IA agota el tiempo.
  * Cada paso captura su propio error para que un fallo no impida los siguientes.
  */
@@ -38,6 +39,7 @@ export async function GET(request: NextRequest) {
     await step('predict', () => runPredictions());
     await step('combos', () => registerSystemCombos());
     await step('accounts', () => runAccounts());
+    await step('push', () => runPushNotifications());
     return out;
   });
 }

@@ -2,7 +2,7 @@
   "name": "ventaja",
   "version": "0.1.0",
   "private": true,
-  "description": "Ventaja \u2014 Tu ventaja antes del pitazo. Herramienta de an\u00e1lisis estad\u00edstico de f\u00fatbol.",
+  "description": "Ventaja — Tu ventaja antes del pitazo. Herramienta de análisis estadístico de fútbol.",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -27,13 +27,16 @@
     "react-dom": "^18.3.1",
     "recharts": "^2.15.4",
     "resend": "^4.8.0",
-    "server-only": "^0.0.1"
+    "server-only": "^0.0.1",
+    "web-push": "^4.0.0"
   },
   "devDependencies": {
     "@types/node": "^22.20.4",
     "@types/react": "^18.3.31",
     "@types/react-dom": "^18.3.7",
+    "@types/web-push": "^3.6.4",
     "autoprefixer": "^10.4.21",
+    "cross-env": "^7.0.3",
     "dotenv": "^16.6.1",
     "eslint": "^8.57.1",
     "eslint-config-next": "14.2.35",
@@ -42,8 +45,7 @@
     "tailwindcss": "^3.4.19",
     "tsx": "^4.23.15",
     "typescript": "^5.9.3",
-    "vitest": "^3.2.4",
-    "cross-env": "^7.0.3"
+    "vitest": "^3.2.4"
   },
   "engines": {
     "node": ">=20"

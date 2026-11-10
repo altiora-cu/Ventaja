@@ -1,11 +1,12 @@
 {
-  "_comment": "Plan Pro de Vercel: renombra este archivo a vercel.json para crons cada 2-6 h.",
+  "_comment": "Plan Pro de Vercel: renombra este archivo a vercel.json para crons cada 2-6 h. Con /api/cron/push cada 2 h pon PUSH_KICKOFF_HOURS=3 para avisar poco antes del pitazo.",
   "crons": [
     { "path": "/api/cron/fixtures", "schedule": "0 */6 * * *" },
     { "path": "/api/cron/stats", "schedule": "0 8 * * *" },
     { "path": "/api/cron/odds", "schedule": "0 */2 * * *" },
     { "path": "/api/cron/predict", "schedule": "10 */2 * * *" },
     { "path": "/api/cron/settle", "schedule": "30 8 * * *" },
-    { "path": "/api/cron/accounts", "schedule": "0 7 * * *" }
+    { "path": "/api/cron/accounts", "schedule": "0 7 * * *" },
+    { "path": "/api/cron/push", "schedule": "15 */2 * * *" }
   ]
 }

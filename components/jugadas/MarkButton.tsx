@@ -11,11 +11,13 @@ interface Props {
   initialMarked: boolean;
   /** El partido ya empezó: la jugada no se puede marcar ni quitar. */
   locked?: boolean;
+  /** El modelo no recomienda esta jugada (sello BAJA): se avisa al marcarla, no se impide. */
+  notRecommended?: boolean;
   className?: string;
 }
 
 /** Marca o quita una jugada de "Mis jugadas". El estado se adelanta y se revierte si el servidor falla. */
-export function MarkButton({ predictionId, initialMarked, locked = false, className }: Props) {
+export function MarkButton({ predictionId, initialMarked, locked = false, notRecommended = false, className }: Props) {
   const t = useTranslations('jugadas');
   const [marked, setMarked] = useState(initialMarked);
   const [error, setError] = useState<string | null>(null);
@@ -53,6 +55,7 @@ export function MarkButton({ predictionId, initialMarked, locked = false, classN
           {error}
         </span>
       )}
+      {!error && marked && notRecommended && <span className="max-w-[180px] text-right text-xs text-[var(--warning)]">{t('notRecommended')}</span>}
     </span>
   );
 }

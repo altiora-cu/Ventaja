@@ -125,7 +125,7 @@ export function MercadosList({ predictions, home, away, locale, markedIds, locke
                                 <Sello nivel={r.sello} animate={false} />
                               </span>
                             </div>
-                            <MarkButton predictionId={r.id} initialMarked={marked.has(r.id)} locked={locked} className="order-2 sm:order-none" />
+                            <MarkButton predictionId={r.id} initialMarked={marked.has(r.id)} locked={locked} notRecommended={r.sello === 'baja'} className="order-2 sm:order-none" />
                           </li>
                         );
                       })}

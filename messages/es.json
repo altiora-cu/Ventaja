@@ -293,7 +293,11 @@
     "newPassword": "Nueva contraseña",
     "passwordUpdated": "Contraseña actualizada.",
     "passwordTooShort": "Mínimo 8 caracteres.",
-    "adminPanel": "Ir al panel de administración"
+    "adminPanel": "Ir al panel de administración",
+    "stakeTitle": "Stake y moneda",
+    "stakeSubtitle": "Cuánto apuestas por jugada y en qué moneda. Cada jugada se guarda con el stake del momento; puedes cambiarlo mientras el partido no empiece.",
+    "pushTitle": "Avisos en el teléfono",
+    "pushSubtitle": "Un aviso antes del pitazo de tus jugadas y otro cuando se cierren con resultado."
   },
   "activar": {
     "title": "Tu prueba de Ventaja terminó.",
@@ -441,7 +445,23 @@
     "closed": "Cerradas",
     "noDecided": "Sin jugadas cerradas aún",
     "confirmRemove": "¿Quitar?",
-    "emptyInPlay": "Nada en juego ahora mismo. Marca jugadas desde un partido o desde Picks."
+    "emptyInPlay": "Nada en juego ahora mismo. Marca jugadas desde un partido o desde Picks.",
+    "balance": "Balance",
+    "staked": "{amount} apostados",
+    "pendingHint": "{count} sueltas · {combos} combinadas",
+    "record": "Registro de victorias",
+    "won": "Ganadas",
+    "lost": "Perdidas",
+    "void": "Nulas",
+    "streak": "Racha",
+    "streakWin": "{count} ganadas seguidas",
+    "streakLoss": "{count} perdidas seguidas",
+    "streakHint": "Mejor: {best} · Peor: {worst}",
+    "month": "Mes",
+    "recordCol": "G-P",
+    "withoutStake": "{count, plural, =1 {# jugada marcada antes de activar el stake no entra} other {# jugadas marcadas antes de activar el stake no entran}} en el balance en dinero.",
+    "stakeLabel": "Stake",
+    "notRecommended": "No recomendada por el modelo (sello BAJA)."
   },
   "boleto": {
     "pill": "{count, plural, =1 {# jugada} other {# jugadas}}",
@@ -460,6 +480,44 @@
     "comboSaved": "Combinada guardada",
     "viewAll": "Ver Mis jugadas",
     "confirmRemove": "¿Quitar?",
-    "removeLabel": "Quitar {label}"
+    "removeLabel": "Quitar {label}",
+    "warnBaja": "No recomendada: sello BAJA",
+    "warnDiscrepa": "No recomendada: la Revisión IA discrepa",
+    "warnSummary": "{count} de {total} {count, plural, =1 {jugada no es recomendada} other {jugadas no son recomendadas}} por el modelo. Una combinada hereda ese riesgo.",
+    "payout": "Si gana cobras {amount}",
+    "comboPayout": "Combinada con {stake}: si gana cobras {amount}."
+  },
+  "preferencias": {
+    "currency": "Moneda",
+    "usd": "Dólares (USD)",
+    "pen": "Soles (PEN)",
+    "currencyHint": "Cambia solo el formato: el balance no se convierte entre monedas.",
+    "defaultStake": "Stake por defecto",
+    "defaultStakeHint": "Se aplica a cada jugada o combinada nueva. Ajusta el de una jugada concreta desde el boleto o Mis jugadas.",
+    "stakeInvalid": "El stake debe ser mayor que 0 y como máximo 100 000.",
+    "notifications": "Avisos",
+    "notifyKickoff": "Antes del pitazo",
+    "notifyKickoffHint": "Las jugadas que juegan hoy, cada mañana (o 3 h antes con el plan Pro).",
+    "notifyResults": "Al cerrarse",
+    "notifyResultsHint": "Ganada o perdida, con el balance del día.",
+    "saved": "Guardado"
+  },
+  "push": {
+    "checking": "Comprobando…",
+    "unsupported": "Este navegador no admite avisos push. En Android usa Chrome; en iPhone instala la app desde Compartir → Añadir a pantalla de inicio.",
+    "notConfigured": "Los avisos aún no están configurados en el servidor.",
+    "needsInstall": "En iPhone los avisos solo funcionan con la app instalada: Compartir → Añadir a pantalla de inicio, y actívalos desde ahí.",
+    "denied": "Bloqueaste los avisos en este navegador. Actívalos en los ajustes del sitio y recarga.",
+    "on": "Avisos activados en este dispositivo",
+    "enable": "Activar avisos",
+    "disable": "Desactivar",
+    "sendTest": "Enviar prueba",
+    "testSent": "Aviso de prueba enviado. Si no llega, revisa los permisos del navegador.",
+    "testFailed": "No se pudo enviar la prueba. Desactiva y vuelve a activar.",
+    "error": "No se pudieron activar los avisos."
+  },
+  "stake": {
+    "label": "Stake",
+    "invalid": "Entre 0.5 y 100 000"
   }
 }
