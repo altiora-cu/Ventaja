@@ -21,10 +21,14 @@ interface Props {
   units: number;
   labels: ResultLabels & { jointProb: string; totalOdds: string };
   action?: ReactNode;
+  /** Dinero ganado o perdido ya formateado (combinadas de usuario con stake). */
+  money?: string | null;
+  /** Control extra bajo el pie (stake editable mientras esté en juego). */
+  extra?: ReactNode;
 }
 
 /** Tarjeta de una combinada (del sistema o del usuario) con el resultado de cada selección. */
-export function ComboCard({ title, meta, legs, jointProb, totalPrice, result, units, labels, action }: Props) {
+export function ComboCard({ title, meta, legs, jointProb, totalPrice, result, units, labels, action, money, extra }: Props) {
   return (
     <article className="card flex flex-col p-4">
       <header className="flex items-start justify-between gap-3">
@@ -61,8 +65,16 @@ export function ComboCard({ title, meta, legs, jointProb, totalPrice, result, un
             <dd className="num text-lg">{odds(totalPrice)}</dd>
           </div>
         </dl>
-        {result ? <span className={`num text-lg font-semibold ${result === 'acierto' ? 'text-acierto' : result === 'fallo' ? 'text-fallo' : 'text-nulo'}`}>{fmtUnits(units)}u</span> : action}
+        {result ? (
+          <span className="text-right">
+            <span className={`num block text-lg font-semibold ${result === 'acierto' ? 'text-acierto' : result === 'fallo' ? 'text-fallo' : 'text-nulo'}`}>{money ?? `${fmtUnits(units)}u`}</span>
+            {money && <span className="num block text-xs text-faint">{fmtUnits(units)}u</span>}
+          </span>
+        ) : (
+          action
+        )}
       </footer>
+      {extra && <div className="mt-3 flex justify-end">{extra}</div>}
     </article>
   );
 }

@@ -7,6 +7,9 @@ import { useTranslations } from 'next-intl';
 import { useEffect, useMemo, useState, useTransition } from 'react';
 import { removePlay, saveComboFromPicks } from '@/app/actions/jugadas';
 import { IconBookmark, IconCheck, IconX } from '@/components/ui/Icons';
+import { StakeInput } from '@/components/jugadas/StakeInput';
+import type { Currency } from '@/lib/db/types';
+import { fmtMoney, payout } from '@/lib/engine/money';
 import { boletoTotals, MIN_COMBO_LEGS } from '@/lib/engine/boleto';
 import { cn, odds, pct } from '@/lib/utils';
 
@@ -19,11 +22,18 @@ export interface BoletoPlay {
   label: string;
   prob: number;
   price: number | null;
+  stake: number | null;
+  /** null si el modelo la recomienda; si no, el motivo. */
+  warning: 'baja' | 'discrepa' | null;
 }
 
 interface Props {
   plays: BoletoPlay[];
   openCombos: number;
+  currency: Currency;
+  /** Stake por defecto del perfil: el que llevará la combinada al guardarla. */
+  defaultStake: number;
+  locale: 'es' | 'en';
 }
 
 /** Rutas donde la burbuja sobra: ya estás en Mis jugadas, o estás entrando/pagando. */
@@ -52,7 +62,7 @@ function useHideOnScroll(): boolean {
  * Burbuja flotante con las jugadas en juego: cuántas van y la cuota combinada.
  * Al tocar, abre un boleto con el detalle, permite quitar jugadas y guardarlas como combinada propia.
  */
-export function BoletoFlotante({ plays: initialPlays, openCombos }: Props) {
+export function BoletoFlotante({ plays: initialPlays, openCombos, currency, defaultStake, locale }: Props) {
   const t = useTranslations('boleto');
   const tc = useTranslations('common');
   const pathname = usePathname();
@@ -86,6 +96,8 @@ export function BoletoFlotante({ plays: initialPlays, openCombos }: Props) {
   }, [confirmId]);
 
   const totals = useMemo(() => boletoTotals(plays), [plays]);
+  const flagged = plays.filter((p) => p.warning !== null);
+  const comboPayout = totals.totalPrice === null ? null : payout(defaultStake, totals.totalPrice);
 
   const hiddenRoute = HIDDEN_PREFIXES.some((p) => pathname.startsWith(p));
   const count = plays.length;
@@ -172,7 +184,7 @@ export function BoletoFlotante({ plays: initialPlays, openCombos }: Props) {
 
               <ul className="min-h-0 flex-1 divide-y divide-border overflow-y-auto px-5">
                 {plays.map((p) => (
-                  <li key={p.id} className="flex items-center justify-between gap-3 py-3">
+                  <li key={p.id} className="grid grid-cols-[1fr_auto] items-center gap-x-3 gap-y-2 py-3">
                     <div className="min-w-0">
                       <Link href={`/partido/${p.fixtureId}`} onClick={() => setOpen(false)} className="block truncate text-xs text-muted hover:text-text">
                         {p.match} · <span className="num">{p.time}</span>
@@ -184,6 +196,16 @@ export function BoletoFlotante({ plays: initialPlays, openCombos }: Props) {
                       <button type="button" onClick={() => remove(p.id)} disabled={pending} className={cn('btn btn-sm px-2', confirmId === p.id ? 'border border-[var(--warning)] text-[var(--warning)]' : 'btn-ghost text-muted')} aria-label={t('removeLabel', { label: p.label })}>
                         {confirmId === p.id ? t('confirmRemove') : <IconX width={15} height={15} />}
                       </button>
+                    </div>
+                    <div className="col-span-2 flex items-end justify-between gap-3">
+                      <span className="min-w-0 text-xs">
+                        {p.warning ? (
+                          <span className="text-[var(--warning)]">{p.warning === 'baja' ? t('warnBaja') : t('warnDiscrepa')}</span>
+                        ) : (
+                          <span className="text-faint">{p.stake !== null && p.price !== null ? t('payout', { amount: fmtMoney(payout(p.stake, p.price) ?? 0, currency, locale) }) : ''}</span>
+                        )}
+                      </span>
+                      <StakeInput kind="jugada" id={p.id} value={p.stake} currency={currency} />
                     </div>
                   </li>
                 ))}
@@ -202,6 +224,12 @@ export function BoletoFlotante({ plays: initialPlays, openCombos }: Props) {
                       <dd className="num text-lg font-semibold">{totals.totalPrice === null ? t('noOdds') : odds(totals.totalPrice)}</dd>
                     </div>
                   </dl>
+                )}
+                {totals.canCombo && comboPayout !== null && <p className="text-xs text-muted">{t('comboPayout', { stake: fmtMoney(defaultStake, currency, locale), amount: fmtMoney(comboPayout, currency, locale) })}</p>}
+                {flagged.length > 0 && (
+                  <p className="rounded-sm border border-[var(--warning)] bg-[var(--warning-bg)] px-3 py-2 text-xs text-[var(--warning)]" role="status">
+                    {t('warnSummary', { count: flagged.length, total: count })}
+                  </p>
                 )}
                 {openCombos > 0 && <p className="text-xs text-muted">{t('openCombos', { count: openCombos })}</p>}
                 {totals.sameFixture && count >= MIN_COMBO_LEGS && <p className="text-xs text-muted">{t('sameFixture')}</p>}

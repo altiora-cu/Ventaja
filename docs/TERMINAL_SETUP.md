@@ -62,7 +62,7 @@ SECRET=$(node -e "console.log(require('crypto').randomBytes(32).toString('hex'))
 ```bash
 npx supabase login                      # abre el navegador y pega el token
 npx supabase link --project-ref TU-PROJECT-REF   # pide la contraseña de la base de datos
-npx supabase db push                    # aplica supabase/migrations/0001, 0002 y 0003
+npx supabase db push                    # aplica supabase/migrations/0001 … 0010
 ```
 (Supabase no soporta `npm i -g supabase`; se usa `npx`.)
 

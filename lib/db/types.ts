@@ -15,6 +15,26 @@ export interface Profile {
   locale: string | null;
   created_at: string;
   last_seen_at: string | null;
+  /** Moneda del stake: dólares o soles. */
+  currency: Currency;
+  /** Stake por defecto en esa moneda; se copia a cada jugada al marcarla. */
+  default_stake: number;
+  notify_kickoff: boolean;
+  notify_results: boolean;
+}
+
+export type Currency = 'USD' | 'PEN';
+
+export interface PushSubscriptionRow {
+  id: number;
+  user_id: string;
+  endpoint: string;
+  p256dh: string;
+  auth: string;
+  user_agent: string | null;
+  created_at: string;
+  last_used_at: string | null;
+  failures: number;
 }
 
 export type DataSource = 'api_football' | 'odds_api' | 'football_data';
@@ -307,6 +327,8 @@ export interface UserCombo {
   total_price: number | null;
   result: PickResult | null;
   units: number;
+  /** Dinero apostado en la moneda del perfil al marcar; null en filas anteriores a la migración 0010. */
+  stake: number | null;
   created_at: string;
   settled_at: string | null;
 }
@@ -326,6 +348,7 @@ export interface UserPick {
   sello: Sello;
   result: PickResult | null;
   units: number;
+  stake: number | null;
   created_at: string;
   settled_at: string | null;
 }

@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getViewer } from '@/lib/auth/viewer';
 import type { Fixture, Prediction, UserComboKind } from '@/lib/db/types';
 import { selectionKey } from '@/lib/engine/edge';
+import { DEFAULT_STAKE, MAX_STAKE } from '@/lib/engine/money';
 
 export interface PlayActionResult {
   ok: boolean;
@@ -27,6 +28,7 @@ const ERRORS = {
   started: 'El partido ya empezó: no se puede marcar ni quitar.',
   settled: 'La jugada ya tiene resultado y no se puede quitar.',
   sameFixture: 'Una combinada no puede repetir partido.',
+  stake: 'El stake debe ser mayor que 0 y como máximo 100 000.',
   generic: 'No se pudo guardar. Inténtalo de nuevo.',
 } as const;
 
@@ -40,11 +42,16 @@ function writer() {
   return createAdminClient();
 }
 
-async function requireUserId(): Promise<{ userId: string } | { error: string }> {
+async function requireUserId(): Promise<{ userId: string; stake: number } | { error: string }> {
   const viewer = await getViewer();
   if (!viewer.user) return { error: ERRORS.auth };
   if (!viewer.access.canAccess) return { error: ERRORS.access };
-  return { userId: viewer.user.id };
+  const stake = Number(viewer.profile?.default_stake);
+  return { userId: viewer.user.id, stake: Number.isFinite(stake) && stake > 0 ? stake : DEFAULT_STAKE };
+}
+
+function validStake(v: unknown): v is number {
+  return typeof v === 'number' && Number.isFinite(v) && v > 0 && v <= MAX_STAKE;
 }
 
 function isPositiveInt(n: unknown): n is number {
@@ -55,11 +62,12 @@ function isOpen(f: PlayFixture): boolean {
   return OPEN_STATUSES.includes(f.status) && new Date(f.kickoff).getTime() > Date.now();
 }
 
-/** Los valores de la jugada se leen de la base de datos; del cliente solo llega el id de la predicción. */
-function pickRow(userId: string, p: Prediction, comboId: number | null) {
+/** Los valores de la jugada se leen de la base de datos; del cliente solo llega el id de la predicción. El stake se copia del perfil. */
+function pickRow(userId: string, p: Prediction, comboId: number | null, stake: number | null) {
   return {
     user_id: userId,
     combo_id: comboId,
+    stake,
     fixture_id: p.fixture_id,
     market: p.market,
     selection: p.selection,
@@ -127,7 +135,7 @@ export async function togglePlay(predictionId: number): Promise<PlayActionResult
       return { ok: true, marked: false };
     }
 
-    const { error } = await writer().from('user_picks').insert(pickRow(auth.userId, pred, null));
+    const { error } = await writer().from('user_picks').insert(pickRow(auth.userId, pred, null, auth.stake));
     // 23505: otra pestaña la marcó a la vez; el resultado es el mismo.
     if (error && error.code !== '23505') return { ok: false, marked: false, error: ERRORS.generic };
     revalidatePlays([pred.fixture_id]);
@@ -139,7 +147,7 @@ export async function togglePlay(predictionId: number): Promise<PlayActionResult
 }
 
 /** Inserta la combinada a partir de predicciones ya leídas de la base de datos y validadas. */
-async function insertCombo(userId: string, preds: Prediction[], kind: UserComboKind): Promise<PlayActionResult> {
+async function insertCombo(userId: string, preds: Prediction[], kind: UserComboKind, stake: number): Promise<PlayActionResult> {
   const supabase = createClient();
   const fixtureIds = preds.map((p) => p.fixture_id);
   if (new Set(fixtureIds).size !== fixtureIds.length) return { ok: false, error: ERRORS.sameFixture };
@@ -154,12 +162,13 @@ async function insertCombo(userId: string, preds: Prediction[], kind: UserComboK
   const admin = writer();
   const { data: combo, error: comboErr } = await admin
     .from('user_combos')
-    .insert({ user_id: userId, kind, joint_prob: jointProb, total_price: totalPrice })
+    .insert({ user_id: userId, kind, joint_prob: jointProb, total_price: totalPrice, stake })
     .select('id')
     .single<{ id: number }>();
   if (comboErr || !combo) return { ok: false, error: ERRORS.generic };
 
-  const { error: legsErr } = await admin.from('user_picks').insert(preds.map((p) => pickRow(userId, p, combo.id)));
+  // Las selecciones de una combinada no llevan stake propio: el de la combinada es el que cuenta.
+  const { error: legsErr } = await admin.from('user_picks').insert(preds.map((p) => pickRow(userId, p, combo.id, null)));
   if (legsErr) {
     // Sin selecciones la combinada no tiene sentido: se deshace.
     await admin.from('user_combos').delete().eq('id', combo.id).eq('user_id', userId);
@@ -179,7 +188,7 @@ export async function saveCombo(predictionIds: number[], kind: UserComboKind = '
 
     const { data: preds } = await createClient().from('predictions').select('*').in('id', ids).returns<Prediction[]>();
     if (!preds || preds.length !== ids.length) return { ok: false, error: ERRORS.notFound };
-    return await insertCombo(auth.userId, preds, kind);
+    return await insertCombo(auth.userId, preds, kind, auth.stake);
   } catch (e) {
     console.error('[jugadas:saveCombo]', e);
     return { ok: false, error: ERRORS.generic };
@@ -215,7 +224,7 @@ export async function saveComboFromPicks(pickIds: number[]): Promise<PlayActionR
     const byKey = new Map((candidates ?? []).map((p) => [legKey(p), p]));
     const preds = picks.map((p) => byKey.get(legKey(p)));
     if (preds.some((p) => !p)) return { ok: false, error: ERRORS.notFound };
-    return await insertCombo(auth.userId, preds as Prediction[], 'propia');
+    return await insertCombo(auth.userId, preds as Prediction[], 'propia', auth.stake);
   } catch (e) {
     console.error('[jugadas:saveComboFromPicks]', e);
     return { ok: false, error: ERRORS.generic };
@@ -249,6 +258,27 @@ export async function removePlay(kind: 'jugada' | 'combinada', id: number): Prom
     return { ok: true, marked: false };
   } catch (e) {
     console.error('[jugadas:removePlay]', e);
+    return { ok: false, error: ERRORS.generic };
+  }
+}
+
+/** Cambia el dinero apostado en una jugada suelta o combinada que sigue en juego. */
+export async function setPlayStake(kind: 'jugada' | 'combinada', id: number, stake: number): Promise<PlayActionResult> {
+  try {
+    if (!isPositiveInt(id) || (kind !== 'jugada' && kind !== 'combinada')) return { ok: false, error: ERRORS.invalid };
+    if (!validStake(stake)) return { ok: false, error: ERRORS.stake };
+    const auth = await requireUserId();
+    if ('error' in auth) return { ok: false, error: auth.error };
+    const table = kind === 'jugada' ? 'user_picks' : 'user_combos';
+    const { data: row } = await createClient().from(table).select('id,result').eq('id', id).eq('user_id', auth.userId).maybeSingle<{ id: number; result: string | null }>();
+    if (!row) return { ok: false, error: ERRORS.notFound };
+    if (row.result !== null) return { ok: false, error: ERRORS.settled };
+    const { error } = await writer().from(table).update({ stake: Math.round(stake * 100) / 100 }).eq('id', id).eq('user_id', auth.userId).is('result', null);
+    if (error) return { ok: false, error: ERRORS.generic };
+    revalidatePlays([]);
+    return { ok: true, marked: true };
+  } catch (e) {
+    console.error('[jugadas:setPlayStake]', e);
     return { ok: false, error: ERRORS.generic };
   }
 }

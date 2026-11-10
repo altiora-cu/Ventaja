@@ -3,10 +3,13 @@ import { getLocale, getTranslations } from 'next-intl/server';
 import { LocaleSwitcher } from '@/components/cuenta/LocaleSwitcher';
 import { TimezoneDetect } from '@/components/cuenta/TimezoneDetect';
 import { PasswordForm } from '@/components/cuenta/PasswordForm';
+import { PreferencesForm } from '@/components/cuenta/PreferencesForm';
+import { PushToggle } from '@/components/cuenta/PushToggle';
 import { IconWhatsApp } from '@/components/ui/Icons';
 import { signOut } from '@/app/actions/auth';
 import { getViewer } from '@/lib/auth/viewer';
 import { getTimeZone } from '@/lib/tz';
+import { DEFAULT_STAKE } from '@/lib/engine/money';
 import { fmtDate, whatsappLink } from '@/lib/utils';
 import type { Locale } from '@/i18n/config';
 
@@ -77,6 +80,18 @@ export default async function CuentaPage() {
           </div>
           <TimezoneDetect current={timeZone} />
         </div>
+      </section>
+
+      <section className="card p-4">
+        <h2 className="mb-1 text-sm font-medium">{t('stakeTitle')}</h2>
+        <p className="mb-4 text-xs text-muted">{t('stakeSubtitle')}</p>
+        <PreferencesForm currency={profile?.currency ?? 'USD'} defaultStake={Number(profile?.default_stake) || DEFAULT_STAKE} notifyKickoff={profile?.notify_kickoff ?? true} notifyResults={profile?.notify_results ?? true} />
+      </section>
+
+      <section className="card p-4">
+        <h2 className="mb-1 text-sm font-medium">{t('pushTitle')}</h2>
+        <p className="mb-3 text-xs text-muted">{t('pushSubtitle')}</p>
+        <PushToggle publicKey={process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? null} />
       </section>
 
       <section className="card p-4">

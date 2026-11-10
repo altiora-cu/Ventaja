@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { hasSupabaseEnv } from '@/lib/supabase/admin';
 import type { FixtureFull, Prediction, SystemCombo, UserCombo, UserPick } from '@/lib/db/types';
 import { qualifiesAsPick, selectionKey } from '@/lib/engine/edge';
+import type { AiReview, Sello } from '@/lib/db/types';
 import { summarizePlays, type PlaySummary } from './play-stats';
 
 const FIXTURE_SELECT = '*,home:teams!fixtures_home_id_fkey(*),away:teams!fixtures_away_id_fkey(*),league:leagues(*)';
@@ -129,6 +130,10 @@ export interface OpenPlay {
   playerName: string | null;
   prob: number;
   price: number | null;
+  sello: Sello;
+  stake: number | null;
+  /** Por qué el modelo no la recomienda: sello BAJA o la Revisión IA discrepa. null si está bien. */
+  warning: 'baja' | 'discrepa' | null;
 }
 
 export interface OpenPlaysSummary {
@@ -138,7 +143,7 @@ export interface OpenPlaysSummary {
   openCombos: number;
 }
 
-type OpenPlayRow = Pick<UserPick, 'id' | 'fixture_id' | 'market' | 'selection' | 'line' | 'player_id' | 'player_name' | 'prob' | 'price'> & {
+type OpenPlayRow = Pick<UserPick, 'id' | 'fixture_id' | 'market' | 'selection' | 'line' | 'player_id' | 'player_name' | 'prob' | 'price' | 'sello' | 'stake'> & {
   fixture: { id: number; kickoff: string; status: string; home: { name: string }; away: { name: string } } | null;
 };
 
@@ -150,7 +155,7 @@ export const getOpenPlays = cache(async (userId: string): Promise<OpenPlaysSumma
   const [{ data: rows }, { count }] = await Promise.all([
     supabase
       .from('user_picks')
-      .select('id,fixture_id,market,selection,line,player_id,player_name,prob,price,fixture:fixtures(id,kickoff,status,home:teams!fixtures_home_id_fkey(name),away:teams!fixtures_away_id_fkey(name))')
+      .select('id,fixture_id,market,selection,line,player_id,player_name,prob,price,sello,stake,fixture:fixtures(id,kickoff,status,home:teams!fixtures_home_id_fkey(name),away:teams!fixtures_away_id_fkey(name))')
       .eq('user_id', userId)
       .is('combo_id', null)
       .is('result', null)
@@ -158,10 +163,17 @@ export const getOpenPlays = cache(async (userId: string): Promise<OpenPlaysSumma
       .returns<OpenPlayRow[]>(),
     supabase.from('user_combos').select('id', { count: 'exact', head: true }).eq('user_id', userId).is('result', null),
   ]);
-  const plays = (rows ?? [])
+  const open = (rows ?? [])
     .filter((r): r is OpenPlayRow & { fixture: NonNullable<OpenPlayRow['fixture']> } => r.fixture !== null && ['NS', 'TBD'].includes(r.fixture.status) && new Date(r.fixture.kickoff).getTime() > now)
-    .sort((a, b) => new Date(a.fixture.kickoff).getTime() - new Date(b.fixture.kickoff).getTime())
-    .map((r) => ({
+    .sort((a, b) => new Date(a.fixture.kickoff).getTime() - new Date(b.fixture.kickoff).getTime());
+  // Veredictos de la Revisión IA de esos partidos: una jugada con "discrepa" se avisa como no recomendada.
+  const fixtureIds = [...new Set(open.map((r) => r.fixture.id))];
+  const { data: analyses } = fixtureIds.length
+    ? await supabase.from('fixture_analysis').select('fixture_id,ai_review').in('fixture_id', fixtureIds).returns<Array<{ fixture_id: number; ai_review: AiReview | null }>>()
+    : { data: [] };
+  const discrepa = new Set<string>();
+  for (const a of analyses ?? []) for (const pl of a.ai_review?.plays ?? []) if (pl.verdict === 'discrepa') discrepa.add(`${a.fixture_id}|${pl.key}`);
+  const plays = open.map((r) => ({
       id: r.id,
       fixtureId: r.fixture.id,
       home: r.fixture.home.name,
@@ -174,6 +186,9 @@ export const getOpenPlays = cache(async (userId: string): Promise<OpenPlaysSumma
       playerName: r.player_name,
       prob: Number(r.prob),
       price: r.price === null ? null : Number(r.price),
+      sello: r.sello,
+      stake: r.stake === null ? null : Number(r.stake),
+      warning: (r.sello === 'baja' ? 'baja' : discrepa.has(`${r.fixture.id}|${playKey(r)}`) ? 'discrepa' : null) as OpenPlay['warning'],
     }));
   return { plays, openCombos: count ?? 0 };
 });
