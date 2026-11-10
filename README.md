@@ -62,6 +62,7 @@ emails/              plantillas de recordatorio (día 26, 29 y 31)
 - Sello: ALTA (prob ≥ 65% y ventaja ≥ 8%), MEDIA (≥ 55% y ≥ 5%), BAJA el resto. Nunca rojo.
 - Picks: ventaja ≥ 5% y prob ≥ 55%. Combinadas de 2/3/4 selecciones (prob. conjunta ≥ 45/30/18%) de partidos distintos.
 - La combinada de 2 selecciones se muestra como **"Conservadora"**: la palabra "segura" está prohibida en toda la UI.
+- Partidos reprogramados (`lib/data/reschedule.ts`): si el proveedor devuelve un id de evento nuevo para el mismo cruce a ≤ 7 días, se actualiza el partido existente (fecha e id) en vez de crear otro. Antes cada reprogramación dejaba un duplicado con la fecha vieja y sin marcador.
 - Ficha del partido: primero qué jugar (mejores jugadas y mercados con cuota), después el porqué (Lectura, Revisión IA, Análisis web, marcador, forma, comparador, historial).
 - Stake en dinero (`lib/engine/money.ts`): cada perfil tiene moneda (USD o PEN) y stake por defecto; cada jugada y combinada guarda su stake al marcarse (editable hasta el pitazo). El balance en dinero es `unidades × stake`; las jugadas anteriores a la migración 0010 (sin stake) quedan fuera del balance en dinero pero no del de unidades.
 - Registro de victorias en Mis jugadas: ganadas, perdidas, nulas, racha actual y mejor/peor racha, y tabla mes a mes (G-P, unidades, balance).
