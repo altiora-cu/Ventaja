@@ -4,7 +4,10 @@ import type { Viewer } from '@/lib/auth/viewer';
 import { getOpenPlays } from '@/lib/data/jugadas';
 import { selectionLabel } from '@/lib/labels';
 import { getTimeZone } from '@/lib/tz';
+<<<<<<< HEAD
 import { DEFAULT_STAKE } from '@/lib/engine/money';
+=======
+>>>>>>> origin/claude/jolly-gates-fz5jss
 import { fmtDate, fmtTime } from '@/lib/utils';
 import type { Locale } from '@/i18n/config';
 
@@ -25,6 +28,7 @@ export async function JugadasBubble({ viewer }: { viewer: Viewer }) {
       label: selectionLabel(p.market, p.selection, p.line, { home: p.home, away: p.away, player: p.playerName }, locale),
       prob: p.prob,
       price: p.price,
+<<<<<<< HEAD
       stake: p.stake,
       warning: p.warning,
     };
@@ -32,4 +36,9 @@ export async function JugadasBubble({ viewer }: { viewer: Viewer }) {
   const profile = viewer.profile;
   const defaultStake = Number(profile?.default_stake);
   return <BoletoFlotante plays={plays} openCombos={data.openCombos} currency={profile?.currency ?? 'USD'} defaultStake={Number.isFinite(defaultStake) && defaultStake > 0 ? defaultStake : DEFAULT_STAKE} locale={locale} />;
+=======
+    };
+  });
+  return <BoletoFlotante plays={plays} openCombos={data.openCombos} />;
+>>>>>>> origin/claude/jolly-gates-fz5jss
 }

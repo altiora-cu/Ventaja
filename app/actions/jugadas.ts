@@ -147,7 +147,11 @@ export async function togglePlay(predictionId: number): Promise<PlayActionResult
 }
 
 /** Inserta la combinada a partir de predicciones ya leídas de la base de datos y validadas. */
+<<<<<<< HEAD
 async function insertCombo(userId: string, preds: Prediction[], kind: UserComboKind, stake: number): Promise<PlayActionResult> {
+=======
+async function insertCombo(userId: string, preds: Prediction[], kind: UserComboKind): Promise<PlayActionResult> {
+>>>>>>> origin/claude/jolly-gates-fz5jss
   const supabase = createClient();
   const fixtureIds = preds.map((p) => p.fixture_id);
   if (new Set(fixtureIds).size !== fixtureIds.length) return { ok: false, error: ERRORS.sameFixture };
@@ -162,13 +166,21 @@ async function insertCombo(userId: string, preds: Prediction[], kind: UserComboK
   const admin = writer();
   const { data: combo, error: comboErr } = await admin
     .from('user_combos')
+<<<<<<< HEAD
     .insert({ user_id: userId, kind, joint_prob: jointProb, total_price: totalPrice, stake })
+=======
+    .insert({ user_id: userId, kind, joint_prob: jointProb, total_price: totalPrice })
+>>>>>>> origin/claude/jolly-gates-fz5jss
     .select('id')
     .single<{ id: number }>();
   if (comboErr || !combo) return { ok: false, error: ERRORS.generic };
 
+<<<<<<< HEAD
   // Las selecciones de una combinada no llevan stake propio: el de la combinada es el que cuenta.
   const { error: legsErr } = await admin.from('user_picks').insert(preds.map((p) => pickRow(userId, p, combo.id, null)));
+=======
+  const { error: legsErr } = await admin.from('user_picks').insert(preds.map((p) => pickRow(userId, p, combo.id)));
+>>>>>>> origin/claude/jolly-gates-fz5jss
   if (legsErr) {
     // Sin selecciones la combinada no tiene sentido: se deshace.
     await admin.from('user_combos').delete().eq('id', combo.id).eq('user_id', userId);
@@ -188,7 +200,11 @@ export async function saveCombo(predictionIds: number[], kind: UserComboKind = '
 
     const { data: preds } = await createClient().from('predictions').select('*').in('id', ids).returns<Prediction[]>();
     if (!preds || preds.length !== ids.length) return { ok: false, error: ERRORS.notFound };
+<<<<<<< HEAD
     return await insertCombo(auth.userId, preds, kind, auth.stake);
+=======
+    return await insertCombo(auth.userId, preds, kind);
+>>>>>>> origin/claude/jolly-gates-fz5jss
   } catch (e) {
     console.error('[jugadas:saveCombo]', e);
     return { ok: false, error: ERRORS.generic };
@@ -224,7 +240,11 @@ export async function saveComboFromPicks(pickIds: number[]): Promise<PlayActionR
     const byKey = new Map((candidates ?? []).map((p) => [legKey(p), p]));
     const preds = picks.map((p) => byKey.get(legKey(p)));
     if (preds.some((p) => !p)) return { ok: false, error: ERRORS.notFound };
+<<<<<<< HEAD
     return await insertCombo(auth.userId, preds as Prediction[], 'propia', auth.stake);
+=======
+    return await insertCombo(auth.userId, preds as Prediction[], 'propia');
+>>>>>>> origin/claude/jolly-gates-fz5jss
   } catch (e) {
     console.error('[jugadas:saveComboFromPicks]', e);
     return { ok: false, error: ERRORS.generic };
