@@ -32,7 +32,7 @@ export async function PickDelDia({ fixture: f, lock, timeZone }: { fixture: Fixt
   }
   const top = f.analysis!.top_market!;
   const locked = lock !== 'none';
-  const href = locked ? (lock === 'login' ? '/login' : '/activar') : `/partido/${f.id}`;
+  const href = locked ? (lock === 'login' ? '/login?next=' + encodeURIComponent(`/partido/${f.id}`) : '/activar') : `/partido/${f.id}`;
   return (
     <FadeIn>
       <Link href={href} className="card card-interactive block border-[var(--ventaja)] p-4 sm:p-5" style={{ borderColor: 'var(--ventaja)' }}>

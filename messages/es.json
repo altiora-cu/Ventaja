@@ -50,7 +50,8 @@
     "goals": "Goles",
     "and": "y",
     "install": "Instalar app",
-    "skipToContent": "Saltar al contenido"
+    "skipToContent": "Saltar al contenido",
+    "prob": "Prob."
   },
   "nav": {
     "jornada": "Jornada",
@@ -137,9 +138,6 @@
     "aiSelloNote": "Sello del modelo {modelo} → sello final {final}",
     "aiDisclaimer": "La IA audita el pick principal y cada jugada recomendada con forma, bajas y cuotas. Solo puede bajar el sello, nunca subirlo. No es una predicción.",
     "smallSample": "Muestra pequeña: uno de los equipos tiene menos de 5 partidos con datos. La probabilidad se mezcla con la cuota del mercado hasta completar la muestra.",
-    "viewAnalysis": "Análisis completo",
-    "viewBest": "Mejores jugadas",
-    "viewLabel": "Vista de la ficha",
     "bestTitle": "Mejores jugadas del partido",
     "bestHint": "Solo jugadas con ventaja sobre la cuota, probabilidad de 60% o más y cuota disponible. Una por mercado, de la más probable a la menos.",
     "bestEmpty": "Este partido no tiene jugadas que valgan la pena: ninguna combina ventaja y probabilidad suficiente. No forzar también es una ventaja.",
@@ -153,7 +151,8 @@
     "aiWebPick": "Jugada orientativa",
     "aiWebEstimate": "Estimación IA",
     "aiWebSources": "Fuentes consultadas",
-    "aiWebDisclaimer": "Este partido no tiene cuotas en Ventaja. La IA investigó en la web forma, bajas y contexto y propone una jugada orientativa con tope de confianza MEDIA. No es una ventaja calculada y no entra en el Historial verificado."
+    "aiWebDisclaimer": "Este partido no tiene cuotas en Ventaja. La IA investigó en la web forma, bajas y contexto y propone una jugada orientativa con tope de confianza MEDIA. No es una ventaja calculada y no entra en el Historial verificado.",
+    "analysisTitle": "Análisis del partido"
   },
   "markets": {
     "1x2": "Resultado (1X2)",
@@ -200,7 +199,7 @@
   },
   "picks": {
     "title": "Mejores apuestas",
-    "subtitle": "Solo mercados con ventaja ≥ 5% y probabilidad ≥ 55%.",
+    "subtitle": "Solo mercados con ventaja ≥ 5% y probabilidad ≥ 55%. Las que ya empezaron van al final.",
     "singles": "Sencillas",
     "combos": "Combinadas",
     "filterSello": "Sello",
@@ -223,7 +222,8 @@
     "clipboardHeader": "Ventaja · {date}",
     "clipboardFooter": "Análisis estadístico. No garantiza resultados. 21+.",
     "saveCombo": "Guardar combinada",
-    "comboSaved": "Guardada"
+    "comboSaved": "Guardada",
+    "inPlay": "En juego"
   },
   "buscar": {
     "title": "Buscar",
@@ -436,6 +436,30 @@
     "statusNulo": "Nula",
     "kindPropia": "Combinada propia",
     "selections": "{count, plural, =1 {# selección} other {# selecciones}}",
-    "atMark": "al marcar"
+    "atMark": "al marcar",
+    "inPlay": "En juego",
+    "closed": "Cerradas",
+    "noDecided": "Sin jugadas cerradas aún",
+    "confirmRemove": "¿Quitar?",
+    "emptyInPlay": "Nada en juego ahora mismo. Marca jugadas desde un partido o desde Picks."
+  },
+  "boleto": {
+    "pill": "{count, plural, =1 {# jugada} other {# jugadas}}",
+    "pillCombos": "{count, plural, =1 {# combinada} other {# combinadas}}",
+    "openLabel": "Abrir el boleto: {count, plural, =0 {sin jugadas en juego} =1 {# jugada en juego} other {# jugadas en juego}}",
+    "title": "Tu boleto",
+    "subtitle": "{count, plural, =1 {# jugada en juego} other {# jugadas en juego}}, de la más próxima a la más lejana.",
+    "subtitleEmpty": "Sin jugadas sueltas en juego.",
+    "emptyPlays": "Marca jugadas desde un partido o desde Picks y aparecerán aquí.",
+    "jointProb": "Probabilidad conjunta",
+    "totalOdds": "Cuota combinada",
+    "noOdds": "Sin cuota",
+    "openCombos": "Además tienes {count, plural, =1 {# combinada} other {# combinadas}} en juego.",
+    "sameFixture": "Para guardar una combinada deja una sola jugada por partido.",
+    "saveCombo": "Guardar como combinada",
+    "comboSaved": "Combinada guardada",
+    "viewAll": "Ver Mis jugadas",
+    "confirmRemove": "¿Quitar?",
+    "removeLabel": "Quitar {label}"
   }
 }

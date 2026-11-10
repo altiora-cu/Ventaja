@@ -43,7 +43,7 @@ export async function OpenPicks({ picks, pendingCount, canSee, unlockHref, local
             <li key={p.id} className="card p-4">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <Link href={`/partido/${f.id}?vista=mejores`} className="text-xs text-muted hover:text-text">
+                  <Link href={`/partido/${f.id}#mejores-jugadas`} className="text-xs text-muted hover:text-text">
                     {f.home.name} vs {f.away.name} · {f.league.name}
                   </Link>
                   <p className="mt-1 font-medium leading-snug">{selectionLabel(p.market, p.selection, p.line === null ? null : Number(p.line), { home: f.home.name, away: f.away.name, player: p.player_name }, locale)}</p>

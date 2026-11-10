@@ -115,3 +115,65 @@ export const getSystemCombos = cache(async (limit = 60): Promise<SystemCombosDat
   const combos = data ?? [];
   return { combos, summary: summarizePlays(combos) };
 });
+
+export interface OpenPlay {
+  id: number;
+  fixtureId: number;
+  home: string;
+  away: string;
+  kickoff: string;
+  market: string;
+  selection: string;
+  line: number | null;
+  playerId: number | null;
+  playerName: string | null;
+  prob: number;
+  price: number | null;
+}
+
+export interface OpenPlaysSummary {
+  /** Jugadas sueltas marcadas cuyo partido aún no empezó, de la más próxima a la más lejana. */
+  plays: OpenPlay[];
+  /** Combinadas guardadas que siguen sin resultado. */
+  openCombos: number;
+}
+
+type OpenPlayRow = Pick<UserPick, 'id' | 'fixture_id' | 'market' | 'selection' | 'line' | 'player_id' | 'player_name' | 'prob' | 'price'> & {
+  fixture: { id: number; kickoff: string; status: string; home: { name: string }; away: { name: string } } | null;
+};
+
+/** Resumen ligero para la burbuja flotante: solo lo que sigue en juego, sin historial. */
+export const getOpenPlays = cache(async (userId: string): Promise<OpenPlaysSummary> => {
+  if (!hasSupabaseEnv()) return { plays: [], openCombos: 0 };
+  const supabase = createClient();
+  const now = Date.now();
+  const [{ data: rows }, { count }] = await Promise.all([
+    supabase
+      .from('user_picks')
+      .select('id,fixture_id,market,selection,line,player_id,player_name,prob,price,fixture:fixtures(id,kickoff,status,home:teams!fixtures_home_id_fkey(name),away:teams!fixtures_away_id_fkey(name))')
+      .eq('user_id', userId)
+      .is('combo_id', null)
+      .is('result', null)
+      .limit(USER_PLAYS_LIMIT)
+      .returns<OpenPlayRow[]>(),
+    supabase.from('user_combos').select('id', { count: 'exact', head: true }).eq('user_id', userId).is('result', null),
+  ]);
+  const plays = (rows ?? [])
+    .filter((r): r is OpenPlayRow & { fixture: NonNullable<OpenPlayRow['fixture']> } => r.fixture !== null && ['NS', 'TBD'].includes(r.fixture.status) && new Date(r.fixture.kickoff).getTime() > now)
+    .sort((a, b) => new Date(a.fixture.kickoff).getTime() - new Date(b.fixture.kickoff).getTime())
+    .map((r) => ({
+      id: r.id,
+      fixtureId: r.fixture.id,
+      home: r.fixture.home.name,
+      away: r.fixture.away.name,
+      kickoff: r.fixture.kickoff,
+      market: r.market,
+      selection: r.selection,
+      line: r.line === null ? null : Number(r.line),
+      playerId: r.player_id,
+      playerName: r.player_name,
+      prob: Number(r.prob),
+      price: r.price === null ? null : Number(r.price),
+    }));
+  return { plays, openCombos: count ?? 0 };
+});

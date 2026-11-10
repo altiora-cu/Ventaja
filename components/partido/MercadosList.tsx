@@ -105,13 +105,22 @@ export function MercadosList({ predictions, home, away, locale, markedIds, locke
                               <p className="truncate text-sm">{label}</p>
                               <ProbBar value={Number(r.prob)} className="mt-1.5 max-w-[160px]" accent={r.sello !== 'baja'} height={3} />
                             </div>
-                            <div className="order-3 col-span-2 flex items-center justify-between gap-3 sm:order-none sm:contents">
-                              <span className="num text-right text-sm">{pct(Number(r.prob))}</span>
-                              <span className="num text-right text-sm text-muted">
-                                {odds(r.best_price)}
-                                {r.best_bookmaker && <span className="ml-1 hidden text-xs text-faint lg:inline">{r.best_bookmaker}</span>}
+                            <div className="order-3 col-span-2 flex items-end justify-between gap-3 sm:order-none sm:contents">
+                              <span className="flex flex-col sm:block">
+                                <span className="text-[10px] uppercase tracking-[0.04em] text-faint sm:hidden">{tc('prob')}</span>
+                                <span className="num text-sm sm:block sm:text-right">{pct(Number(r.prob))}</span>
                               </span>
-                              <span className={`num text-right text-sm ${r.edge !== null && Number(r.edge) > 0 ? 'text-ventaja' : 'text-muted'}`}>{r.edge === null ? '—' : signedPct(Number(r.edge))}</span>
+                              <span className="flex flex-col sm:block">
+                                <span className="text-[10px] uppercase tracking-[0.04em] text-faint sm:hidden">{tc('odds')}</span>
+                                <span className="num text-sm text-muted sm:block sm:text-right">
+                                  {odds(r.best_price)}
+                                  {r.best_bookmaker && <span className="ml-1 hidden text-xs text-faint lg:inline">{r.best_bookmaker}</span>}
+                                </span>
+                              </span>
+                              <span className="flex flex-col sm:block">
+                                <span className="text-[10px] uppercase tracking-[0.04em] text-faint sm:hidden">{tc('edge')}</span>
+                                <span className={`num text-sm sm:block sm:text-right ${r.edge !== null && Number(r.edge) > 0 ? 'text-ventaja' : 'text-muted'}`}>{r.edge === null ? '—' : signedPct(Number(r.edge))}</span>
+                              </span>
                               <span className="flex justify-end">
                                 <Sello nivel={r.sello} animate={false} />
                               </span>

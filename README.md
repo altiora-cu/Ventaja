@@ -62,6 +62,8 @@ emails/              plantillas de recordatorio (día 26, 29 y 31)
 - Sello: ALTA (prob ≥ 65% y ventaja ≥ 8%), MEDIA (≥ 55% y ≥ 5%), BAJA el resto. Nunca rojo.
 - Picks: ventaja ≥ 5% y prob ≥ 55%. Combinadas de 2/3/4 selecciones (prob. conjunta ≥ 45/30/18%) de partidos distintos.
 - La combinada de 2 selecciones se muestra como **"Conservadora"**: la palabra "segura" está prohibida en toda la UI.
+- Ficha del partido: primero qué jugar (mejores jugadas y mercados con cuota), después el porqué (Lectura, Revisión IA, Análisis web, marcador, forma, comparador, historial).
+- Boleto flotante (`components/jugadas/BoletoFlotante.tsx`): burbuja fija con el número de jugadas en juego y la cuota combinada. Al tocarla, lista las jugadas por hora, permite quitarlas (con confirmación) y guardarlas como **combinada propia** (`saveComboFromPicks`). No aparece sin sesión, sin acceso, sin jugadas ni en `/mis-jugadas`, `/login`, `/registro` o `/activar`.
 
 ## Revisión IA
 

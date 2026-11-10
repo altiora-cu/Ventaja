@@ -52,7 +52,7 @@ export default async function CuentaPage() {
             <p className="num text-sm">{fmtDate(profile.created_at, locale, undefined, timeZone)}</p>
           </>
         )}
-        {access.status !== 'admin' && (
+        {(access.status === 'trial' || access.status === 'vencida' || access.status === 'suspendida' || access.needsReminder) && (
           <a href={whatsappLink(email)} target="_blank" rel="noopener noreferrer" className="btn btn-primary mt-4 w-full">
             <IconWhatsApp width={18} height={18} />
             {t('activate')}
