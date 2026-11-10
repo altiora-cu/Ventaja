@@ -12,6 +12,7 @@ import { masterProvider, oddsProvider } from './providers';
 import type { ProviderFixture } from './providers/types';
 import { TeamResolver } from './teams';
 import { matchFixturesToEvents } from './matching';
+import { findRescheduled, RESCHEDULE_WINDOW_DAYS, type ExistingFixture } from './reschedule';
 
 /** Fuente de datos: 'providers' (The Odds API + football-data.org, por defecto) o 'api_football' (plan de pago). */
 export function isApiFootballSource(): boolean {
@@ -33,6 +34,8 @@ export interface IngestReport {
   /** Partidos empezados hace > 3 días sin marcador: The Odds API ya no los devuelve; cargar a mano. */
   staleResults: number;
   fixturesUpserted: number;
+  /** Partidos reprogramados reconocidos y actualizados en vez de duplicados. */
+  rescheduled: number;
   statsFetched: number;
   playersUpdated: number;
   injuries: number;
@@ -43,7 +46,7 @@ export interface IngestReport {
 }
 
 function emptyReport(): IngestReport {
-  return { leagues: 0, staleResults: 0, fixturesUpserted: 0, statsFetched: 0, playersUpdated: 0, injuries: 0, lineups: 0, teamStats: 0, skipped: [], errors: [] };
+  return { leagues: 0, staleResults: 0, fixturesUpserted: 0, rescheduled: 0, statsFetched: 0, playersUpdated: 0, injuries: 0, lineups: 0, teamStats: 0, skipped: [], errors: [] };
 }
 
 export async function activeLeagues(admin: SupabaseClient): Promise<League[]> {
@@ -369,6 +372,22 @@ async function upsertProviderFixtures(admin: SupabaseClient, resolver: TeamResol
     .returns<Array<{ id: number; external_id: string; odds_event_id: string | null; status: string; home_goals: number | null; away_goals: number | null }>>();
   const byExt = new Map((existing ?? []).map((e) => [e.external_id, e]));
 
+  // Partidos de la liga alrededor de las fechas recibidas, para reconocer reprogramaciones (id de evento nuevo, mismo cruce).
+  const kickoffs = rows.map((r) => new Date(r.kickoff).getTime()).filter(Number.isFinite);
+  const windowMs = RESCHEDULE_WINDOW_DAYS * 86_400_000;
+  const { data: nearby } = kickoffs.length
+    ? await admin
+        .from('fixtures')
+        .select('id,external_id,kickoff,home_id,away_id,status,home_goals,away_goals')
+        .eq('league_id', league.id)
+        .eq('source', source)
+        .gte('kickoff', new Date(Math.min(...kickoffs) - windowMs).toISOString())
+        .lte('kickoff', new Date(Math.max(...kickoffs) + windowMs).toISOString())
+        .returns<Array<ExistingFixture & { status: string; home_goals: number | null; away_goals: number | null }>>()
+    : { data: [] };
+  const providerIds = new Set(rows.map((r) => r.external_id));
+  const reused = new Set<number>();
+
   const upserts: FixtureUpsert[] = [];
   for (const r of rows) {
     try {
@@ -376,7 +395,15 @@ async function upsertProviderFixtures(admin: SupabaseClient, resolver: TeamResol
         resolver.resolve(r.home_name, source, { logo: r.home_logo, external_id: r.home_external_id, country: league.country }),
         resolver.resolve(r.away_name, source, { logo: r.away_logo, external_id: r.away_external_id, country: league.country }),
       ]);
-      const prev = byExt.get(r.external_id);
+      let prev = byExt.get(r.external_id);
+      if (!prev) {
+        const old = (nearby ?? []).find((f) => f.id === findRescheduled({ home_id: home.id, away_id: away.id, kickoff: r.kickoff }, nearby ?? [], providerIds, reused)?.id);
+        if (old) {
+          reused.add(old.id);
+          prev = { id: old.id, external_id: r.external_id, odds_event_id: null, status: old.status, home_goals: old.home_goals, away_goals: old.away_goals };
+          report.rescheduled++;
+        }
+      }
       let id = prev?.id;
       if (!id) {
         const { data: idRow, error } = await admin.rpc('next_fixture_id');

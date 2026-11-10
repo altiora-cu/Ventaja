@@ -27,7 +27,10 @@ export async function runJob<T>(name: string, job: () => Promise<T>): Promise<Ne
   const started = Date.now();
   try {
     const result = await job();
-    return NextResponse.json({ ok: true, job: name, ms: Date.now() - started, result });
+    const ms = Date.now() - started;
+    // Vercel no muestra el cuerpo de la respuesta de un cron: el resumen va al log para poder auditarlo.
+    console.log(`[cron:${name}] ok en ${ms} ms`, JSON.stringify(result).slice(0, 6000));
+    return NextResponse.json({ ok: true, job: name, ms, result });
   } catch (e) {
     console.error(`[cron:${name}]`, e);
     return NextResponse.json({ ok: false, job: name, ms: Date.now() - started, error: 'El job falló; el detalle está en los logs del servidor' }, { status: 500 });
