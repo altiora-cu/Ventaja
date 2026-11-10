@@ -130,13 +130,10 @@ export interface OpenPlay {
   playerName: string | null;
   prob: number;
   price: number | null;
-<<<<<<< HEAD
   sello: Sello;
   stake: number | null;
   /** Por qué el modelo no la recomienda: sello BAJA o la Revisión IA discrepa. null si está bien. */
   warning: 'baja' | 'discrepa' | null;
-=======
->>>>>>> origin/claude/jolly-gates-fz5jss
 }
 
 export interface OpenPlaysSummary {
@@ -146,11 +143,7 @@ export interface OpenPlaysSummary {
   openCombos: number;
 }
 
-<<<<<<< HEAD
 type OpenPlayRow = Pick<UserPick, 'id' | 'fixture_id' | 'market' | 'selection' | 'line' | 'player_id' | 'player_name' | 'prob' | 'price' | 'sello' | 'stake'> & {
-=======
-type OpenPlayRow = Pick<UserPick, 'id' | 'fixture_id' | 'market' | 'selection' | 'line' | 'player_id' | 'player_name' | 'prob' | 'price'> & {
->>>>>>> origin/claude/jolly-gates-fz5jss
   fixture: { id: number; kickoff: string; status: string; home: { name: string }; away: { name: string } } | null;
 };
 
@@ -162,11 +155,7 @@ export const getOpenPlays = cache(async (userId: string): Promise<OpenPlaysSumma
   const [{ data: rows }, { count }] = await Promise.all([
     supabase
       .from('user_picks')
-<<<<<<< HEAD
       .select('id,fixture_id,market,selection,line,player_id,player_name,prob,price,sello,stake,fixture:fixtures(id,kickoff,status,home:teams!fixtures_home_id_fkey(name),away:teams!fixtures_away_id_fkey(name))')
-=======
-      .select('id,fixture_id,market,selection,line,player_id,player_name,prob,price,fixture:fixtures(id,kickoff,status,home:teams!fixtures_home_id_fkey(name),away:teams!fixtures_away_id_fkey(name))')
->>>>>>> origin/claude/jolly-gates-fz5jss
       .eq('user_id', userId)
       .is('combo_id', null)
       .is('result', null)
@@ -174,7 +163,6 @@ export const getOpenPlays = cache(async (userId: string): Promise<OpenPlaysSumma
       .returns<OpenPlayRow[]>(),
     supabase.from('user_combos').select('id', { count: 'exact', head: true }).eq('user_id', userId).is('result', null),
   ]);
-<<<<<<< HEAD
   const open = (rows ?? [])
     .filter((r): r is OpenPlayRow & { fixture: NonNullable<OpenPlayRow['fixture']> } => r.fixture !== null && ['NS', 'TBD'].includes(r.fixture.status) && new Date(r.fixture.kickoff).getTime() > now)
     .sort((a, b) => new Date(a.fixture.kickoff).getTime() - new Date(b.fixture.kickoff).getTime());
@@ -186,12 +174,6 @@ export const getOpenPlays = cache(async (userId: string): Promise<OpenPlaysSumma
   const discrepa = new Set<string>();
   for (const a of analyses ?? []) for (const pl of a.ai_review?.plays ?? []) if (pl.verdict === 'discrepa') discrepa.add(`${a.fixture_id}|${pl.key}`);
   const plays = open.map((r) => ({
-=======
-  const plays = (rows ?? [])
-    .filter((r): r is OpenPlayRow & { fixture: NonNullable<OpenPlayRow['fixture']> } => r.fixture !== null && ['NS', 'TBD'].includes(r.fixture.status) && new Date(r.fixture.kickoff).getTime() > now)
-    .sort((a, b) => new Date(a.fixture.kickoff).getTime() - new Date(b.fixture.kickoff).getTime())
-    .map((r) => ({
->>>>>>> origin/claude/jolly-gates-fz5jss
       id: r.id,
       fixtureId: r.fixture.id,
       home: r.fixture.home.name,
@@ -204,12 +186,9 @@ export const getOpenPlays = cache(async (userId: string): Promise<OpenPlaysSumma
       playerName: r.player_name,
       prob: Number(r.prob),
       price: r.price === null ? null : Number(r.price),
-<<<<<<< HEAD
       sello: r.sello,
       stake: r.stake === null ? null : Number(r.stake),
       warning: (r.sello === 'baja' ? 'baja' : discrepa.has(`${r.fixture.id}|${playKey(r)}`) ? 'discrepa' : null) as OpenPlay['warning'],
-=======
->>>>>>> origin/claude/jolly-gates-fz5jss
     }));
   return { plays, openCombos: count ?? 0 };
 });

@@ -49,14 +49,8 @@ export default async function MisJugadasPage() {
   const timeZone = getTimeZone();
   const now = Date.now();
   const { overall, singles, combos } = data;
-<<<<<<< HEAD
   const currency = viewer.profile?.currency ?? 'USD';
   const defaultStake = Number(viewer.profile?.default_stake) || DEFAULT_STAKE;
-=======
-  // En juego: sin resultado y con partido por delante, de la más próxima a la más lejana. El resto, cerradas (o empezadas).
-  const open = singles.filter((p) => canRemove(p, now)).sort((a, b) => new Date(a.fixture!.kickoff).getTime() - new Date(b.fixture!.kickoff).getTime());
-  const closed = singles.filter((p) => !canRemove(p, now));
->>>>>>> origin/claude/jolly-gates-fz5jss
   const labels = { pendiente: t('statusPending'), acierto: t('statusAcierto'), fallo: t('statusFallo'), nulo: t('statusNulo'), jointProb: tp('jointProb'), totalOdds: tp('totalOdds') };
 
   // En juego: sin resultado y con partido por delante, de la más próxima a la más lejana. El resto, cerradas (o empezadas).
@@ -81,20 +75,13 @@ export default async function MisJugadasPage() {
 
       <StatTiles
         tiles={[
-<<<<<<< HEAD
           { label: t('balance'), value: fmtMoney(money.balance, currency, locale, true), hint: `${fmtUnits(overall.units)}u · ${t('staked', { amount: fmtMoney(money.staked, currency, locale) })}`, accent: money.balance > 0 },
           { label: t('winRate'), value: overall.decided > 0 ? pct(overall.hitRate) : '—', hint: overall.decided > 0 ? t('winRateHint', { hits: overall.hits, decided: overall.decided }) : t('noDecided') },
           { label: t('pending'), value: String(overall.pending), hint: t('pendingHint', { count: open.length, combos: combos.filter((c) => c.result === null).length }) },
-=======
-          { label: t('winRate'), value: overall.decided > 0 ? pct(overall.hitRate) : '—', hint: overall.decided > 0 ? t('winRateHint', { hits: overall.hits, decided: overall.decided }) : t('noDecided'), accent: overall.decided > 0 },
-          { label: t('units'), value: `${fmtUnits(overall.units)}u`, hint: t('unitsHint') },
-          { label: t('pending'), value: String(overall.pending) },
->>>>>>> origin/claude/jolly-gates-fz5jss
           { label: t('total'), value: String(overall.total) },
         ]}
       />
 
-<<<<<<< HEAD
       <section className="space-y-3" aria-labelledby="registro">
         <h2 id="registro" className="text-sm font-medium text-muted">
           {t('record')}
@@ -136,74 +123,6 @@ export default async function MisJugadasPage() {
         )}
         {money.withoutStake > 0 && <p className="text-xs text-faint">{t('withoutStake', { count: money.withoutStake })}</p>}
       </section>
-=======
-      {(
-        [
-          { id: 'jugadas-en-juego', title: t('inPlay'), list: open, empty: t('emptyInPlay'), rate: null },
-          { id: 'jugadas-cerradas', title: t('closed'), list: closed, empty: t('emptySingles'), rate: data.singlesSummary.decided > 0 ? pct(data.singlesSummary.hitRate) : null },
-        ] as const
-      ).map(({ id, title, list, empty, rate }) => (
-        <section key={id} className="space-y-3" aria-labelledby={id}>
-          <h2 id={id} className="flex items-baseline justify-between text-sm font-medium text-muted">
-            <span>
-              {title} <span className="num text-xs text-faint">({list.length})</span>
-            </span>
-            {rate && <span className="num text-xs text-faint">{rate}</span>}
-          </h2>
-          {list.length === 0 ? (
-            <p className="card p-6 text-center text-sm text-muted">{empty}</p>
-          ) : (
-            <ul className="grid gap-2 lg:grid-cols-2">
-            {list.map((p) => (
-              <li key={p.id} className="card p-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    {p.fixture ? (
-                      <Link href={`/partido/${p.fixture.id}`} className="text-xs text-muted hover:text-text">
-                        {matchTitle(p)} · {p.fixture.league.name}
-                      </Link>
-                    ) : (
-                      <span className="text-xs text-muted">—</span>
-                    )}
-                    <p className="mt-1 font-medium leading-snug">{legLabel(p, locale)}</p>
-                  </div>
-                  <ResultBadge result={p.result} labels={labels} />
-                </div>
-                <div className="mt-3 flex flex-wrap items-end justify-between gap-3">
-                  <dl className="flex flex-wrap gap-x-5 gap-y-2 text-sm">
-                    {p.fixture && (
-                      <div>
-                        <dt className="text-xs text-faint">{tc('date')}</dt>
-                        <dd className="num">
-                          {fmtDate(p.fixture.kickoff, locale, { day: 'numeric', month: 'short' }, timeZone)} · {fmtTime(p.fixture.kickoff, locale, timeZone)}
-                        </dd>
-                      </div>
-                    )}
-                    <div>
-                      <dt className="text-xs text-faint">{tc('probability')}</dt>
-                      <dd className="num">{pct(Number(p.prob))}</dd>
-                    </div>
-                    <div>
-                      <dt className="text-xs text-faint">{tc('odds')}</dt>
-                      <dd className="num">{odds(p.price === null ? null : Number(p.price))}</dd>
-                    </div>
-                    <div className="self-end">
-                      <Sello nivel={p.sello} animate={false} />
-                    </div>
-                  </dl>
-                  {p.result ? (
-                    <span className={`num text-lg font-semibold ${p.result === 'acierto' ? 'text-acierto' : p.result === 'fallo' ? 'text-fallo' : 'text-nulo'}`}>{fmtUnits(Number(p.units))}u</span>
-                  ) : (
-                    canRemove(p, now) && <RemovePlayButton kind="jugada" id={p.id} />
-                  )}
-                </div>
-              </li>
-            ))}
-            </ul>
-          )}
-        </section>
-      ))}
->>>>>>> origin/claude/jolly-gates-fz5jss
 
       {(
         [

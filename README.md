@@ -63,13 +63,10 @@ emails/              plantillas de recordatorio (día 26, 29 y 31)
 - Picks: ventaja ≥ 5% y prob ≥ 55%. Combinadas de 2/3/4 selecciones (prob. conjunta ≥ 45/30/18%) de partidos distintos.
 - La combinada de 2 selecciones se muestra como **"Conservadora"**: la palabra "segura" está prohibida en toda la UI.
 - Ficha del partido: primero qué jugar (mejores jugadas y mercados con cuota), después el porqué (Lectura, Revisión IA, Análisis web, marcador, forma, comparador, historial).
-<<<<<<< HEAD
 - Stake en dinero (`lib/engine/money.ts`): cada perfil tiene moneda (USD o PEN) y stake por defecto; cada jugada y combinada guarda su stake al marcarse (editable hasta el pitazo). El balance en dinero es `unidades × stake`; las jugadas anteriores a la migración 0010 (sin stake) quedan fuera del balance en dinero pero no del de unidades.
 - Registro de victorias en Mis jugadas: ganadas, perdidas, nulas, racha actual y mejor/peor racha, y tabla mes a mes (G-P, unidades, balance).
 - Jugadas no recomendadas: al marcar una jugada con sello BAJA se avisa; en el boleto, cada jugada con sello BAJA o con veredicto "discrepa" de la Revisión IA lleva aviso ámbar y el resumen advierte antes de guardar la combinada. Se avisa, no se impide.
 - Avisos push (`lib/push/`): Web Push con VAPID (`NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`). Se activan desde `/cuenta`; en iPhone solo con la app instalada en la pantalla de inicio. `/api/cron/push` (y el último paso del cron diario) envía un aviso por usuario con las jugadas que empiezan en `PUSH_KICKOFF_HOURS` (24 en Hobby, 3 en Pro) y otro con las jugadas y combinadas recién cerradas y su balance; `push_log` evita repetir avisos. Migración `0010_push_stake.sql`.
-=======
->>>>>>> origin/claude/jolly-gates-fz5jss
 - Boleto flotante (`components/jugadas/BoletoFlotante.tsx`): burbuja fija con el número de jugadas en juego y la cuota combinada. Al tocarla, lista las jugadas por hora, permite quitarlas (con confirmación) y guardarlas como **combinada propia** (`saveComboFromPicks`). No aparece sin sesión, sin acceso, sin jugadas ni en `/mis-jugadas`, `/login`, `/registro` o `/activar`.
 
 ## Revisión IA
