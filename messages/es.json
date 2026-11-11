@@ -461,7 +461,8 @@
     "recordCol": "G-P",
     "withoutStake": "{count, plural, =1 {# jugada marcada antes de activar el stake no entra} other {# jugadas marcadas antes de activar el stake no entran}} en el balance en dinero.",
     "stakeLabel": "Stake",
-    "notRecommended": "No recomendada por el modelo (sello BAJA)."
+    "notRecommended": "No recomendada por el modelo (sello BAJA).",
+    "unitsCol": "Unidades"
   },
   "boleto": {
     "pill": "{count, plural, =1 {# jugada} other {# jugadas}}",

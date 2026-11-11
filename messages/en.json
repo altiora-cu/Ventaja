@@ -461,7 +461,8 @@
     "recordCol": "W-L",
     "withoutStake": "{count, plural, =1 {# play marked before stakes were enabled is left out of} other {# plays marked before stakes were enabled are left out of}} the money balance.",
     "stakeLabel": "Stake",
-    "notRecommended": "Not recommended by the model (LOW seal)."
+    "notRecommended": "Not recommended by the model (LOW seal).",
+    "unitsCol": "Units"
   },
   "boleto": {
     "pill": "{count, plural, =1 {# play} other {# plays}}",

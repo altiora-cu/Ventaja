@@ -36,6 +36,8 @@ export interface IngestReport {
   fixturesUpserted: number;
   /** Partidos reprogramados reconocidos y actualizados en vez de duplicados. */
   rescheduled: number;
+  /** Marcadores: partidos que los necesitaban, recibidos del proveedor y actualizados. */
+  scores: { needed: number; received: number; updated: number; skippedTtl: number };
   statsFetched: number;
   playersUpdated: number;
   injuries: number;
@@ -46,7 +48,7 @@ export interface IngestReport {
 }
 
 function emptyReport(): IngestReport {
-  return { leagues: 0, staleResults: 0, fixturesUpserted: 0, rescheduled: 0, statsFetched: 0, playersUpdated: 0, injuries: 0, lineups: 0, teamStats: 0, skipped: [], errors: [] };
+  return { leagues: 0, staleResults: 0, fixturesUpserted: 0, rescheduled: 0, scores: { needed: 0, received: 0, updated: 0, skippedTtl: 0 }, statsFetched: 0, playersUpdated: 0, injuries: 0, lineups: 0, teamStats: 0, skipped: [], errors: [] };
 }
 
 export async function activeLeagues(admin: SupabaseClient): Promise<League[]> {
@@ -514,29 +516,35 @@ export async function ingestFixturesProviders(): Promise<IngestReport> {
         .lte('kickoff', new Date(now - 2 * 3600_000).toISOString())
         .returns<Array<{ id: number; external_id: string }>>();
       if (needing?.length) {
+        report.scores.needed += needing.length;
         const key = `scores:${league.odds_sport_key}`;
         if (await shouldFetch(admin, key, TTL.results)) {
           try {
             const results = await provider.results(league, 3);
+            report.scores.received += results.length;
             const byExt = new Map(results.map((r) => [r.external_id, r]));
             let updated = 0;
             for (const f of needing) {
               const r = byExt.get(f.external_id);
-              if (!r) continue;
+              if (!r || r.home_goals == null || r.away_goals == null) continue;
               await admin.from('fixtures').update({ status: 'FT', home_goals: r.home_goals, away_goals: r.away_goals, updated_at: new Date().toISOString() }).eq('id', f.id);
               updated++;
             }
-            report.statsFetched += updated;
+            report.scores.updated += updated;
+            if (updated < needing.length) console.warn(`[ingest] ${league.name}: The Odds API devolvió ${results.length} marcadores; ${needing.length - updated} de ${needing.length} partidos siguen sin marcador`);
             await markFetched(admin, key, `scores ${updated}/${needing.length}`, results.length);
           } catch (e) {
             report.errors.push(`${key}: ${(e as Error).message}`);
           }
-        } else report.skipped.push(key);
+        } else {
+          report.scores.skippedTtl += needing.length;
+          report.skipped.push(key);
+        }
       }
     }
   }
   report.staleResults = await countStaleResults(admin);
-  if (report.staleResults > 0) console.warn(`[ingest] ${report.staleResults} partidos con más de 3 días sin marcador: cargar a mano desde /admin`);
+  if (report.staleResults > 0) console.warn(`[ingest] ${report.staleResults} partidos con más de 3 días sin marcador: los busca la IA en la web (web-scores) o se cargan a mano desde /admin`);
   return report;
 }
 

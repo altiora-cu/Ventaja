@@ -7,13 +7,14 @@ import { settlePicks } from '@/lib/data/settle';
 import { registerSystemCombos, settleUserPlays } from '@/lib/data/settle-user';
 import { runAccounts } from '@/lib/data/accounts';
 import { runPushNotifications } from '@/lib/push/notify';
+import { runWebScores } from '@/lib/data/web-scores';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300;
 
 /**
- * Cron diario único (plan Hobby de Vercel): calendario + resultados → cierre de picks, jugadas y combinadas →
+ * Cron diario único (plan Hobby de Vercel): calendario + resultados → marcadores por búsqueda web → cierre de picks, jugadas y combinadas →
  * estadísticas → cuotas → predicciones y Lecturas → registro de combinadas → cuentas y recordatorios → avisos push.
  * El cierre va antes de las predicciones: es rápido y no debe perderse si el paso de IA agota el tiempo.
  * Cada paso captura su propio error para que un fallo no impida los siguientes.
@@ -31,6 +32,8 @@ export async function GET(request: NextRequest) {
       }
     };
     await step('fixtures', () => ingestFixtures(7));
+    // Marcadores que The Odds API ya no devuelve (> 3 días): la IA los busca en la web antes de cerrar picks.
+    await step('webScores', () => runWebScores());
     await step('settle', settlePicks);
     await step('settleUser', settleUserPlays);
     await step('stats', ingestStats);
