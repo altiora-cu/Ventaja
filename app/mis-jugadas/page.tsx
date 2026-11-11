@@ -62,7 +62,11 @@ export default async function MisJugadasPage() {
   const money = summarizeMoney(outcomes);
   const st = streaks(outcomes);
   const record = monthlyRecord(outcomes, timeZone);
-  const fmtMonth = (m: string) => fmtDate(`${m}-15T12:00:00Z`, locale, { month: 'long', year: 'numeric' }, 'UTC');
+  // "octubre de 2026" → "Octubre de 2026": solo la primera letra, no cada palabra.
+  const fmtMonth = (m: string) => {
+    const s = fmtDate(`${m}-15T12:00:00Z`, locale, { month: 'long', year: 'numeric' }, 'UTC');
+    return s.charAt(0).toUpperCase() + s.slice(1);
+  };
   const moneyOf = (p: { result: string | null; units: number; stake: number | null }) => (p.stake === null ? null : fmtMoney(playMoney(Number(p.units), Number(p.stake)), currency, locale, true));
   const streakLabel = st.current > 0 ? t('streakWin', { count: st.current }) : st.current < 0 ? t('streakLoss', { count: -st.current }) : '—';
 
@@ -101,14 +105,14 @@ export default async function MisJugadasPage() {
                 <tr>
                   <th className="px-4 py-2 font-medium">{t('month')}</th>
                   <th className="px-2 py-2 text-right font-medium">{t('recordCol')}</th>
-                  <th className="px-2 py-2 text-right font-medium">{t('units')}</th>
+                  <th className="px-2 py-2 text-right font-medium">{t('unitsCol')}</th>
                   <th className="px-4 py-2 text-right font-medium">{t('balance')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
                 {record.map((r) => (
                   <tr key={r.month}>
-                    <td className="px-4 py-2 capitalize">{fmtMonth(r.month)}</td>
+                    <td className="px-4 py-2">{fmtMonth(r.month)}</td>
                     <td className="num px-2 py-2 text-right">
                       {r.hits}-{r.misses}
                       {r.voids ? <span className="text-faint">-{r.voids}</span> : null}
