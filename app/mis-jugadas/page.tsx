@@ -68,7 +68,9 @@ export default async function MisJugadasPage() {
     return s.charAt(0).toUpperCase() + s.slice(1);
   };
   const moneyOf = (p: { result: string | null; units: number; stake: number | null }) => (p.stake === null ? null : fmtMoney(playMoney(Number(p.units), Number(p.stake)), currency, locale, true));
-  const streakLabel = st.current > 0 ? t('streakWin', { count: st.current }) : st.current < 0 ? t('streakLoss', { count: -st.current }) : '—';
+  // Valor numérico con signo en la tipografía de números; la explicación va en la nota pequeña.
+  const streakValue = st.current > 0 ? `+${st.current}` : st.current < 0 ? `−${-st.current}` : '0';
+  const streakHint = `${st.current > 0 ? t('streakWin', { count: st.current }) : st.current < 0 ? t('streakLoss', { count: -st.current }) : t('streakNone')} · ${t('streakHint', { best: st.bestWin, worst: st.worstLoss })}`;
 
   return (
     <div className="space-y-6">
@@ -95,7 +97,7 @@ export default async function MisJugadasPage() {
             { label: t('won'), value: String(overall.hits), accent: overall.hits > 0 },
             { label: t('lost'), value: String(overall.misses) },
             { label: t('void'), value: String(overall.voids) },
-            { label: t('streak'), value: streakLabel, hint: t('streakHint', { best: st.bestWin, worst: st.worstLoss }) },
+            { label: t('streak'), value: streakValue, hint: streakHint, accent: st.current > 0 },
           ]}
         />
         {record.length > 0 && (
