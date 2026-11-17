@@ -147,7 +147,7 @@ export function PicksView({ rows, leagues, locale, dateLabel, markedIds, timeZon
                       </div>
                       <Sello nivel={r.sello} animate={false} />
                     </div>
-                    <div className="mt-3 flex items-end justify-between gap-3">
+                    <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                       <div className="flex gap-5">
                         <div>
                           <p className="text-xs text-faint">{tc('probability')}</p>
@@ -162,8 +162,8 @@ export function PicksView({ rows, leagues, locale, dateLabel, markedIds, timeZon
                           <p className="num text-lg text-ventaja">{signedPct(r.edge)}</p>
                         </div>
                       </div>
-                      <div className="flex flex-wrap items-start justify-end gap-2">
-                        <MarkButton predictionId={r.id} initialMarked={marked.has(r.id)} locked={r.started} />
+                      <div className="flex flex-wrap items-start gap-2 sm:justify-end">
+                        <MarkButton predictionId={r.id} initialMarked={marked.has(r.id)} locked={r.started} className="items-start sm:items-end" />
                         <button type="button" className="btn btn-secondary btn-sm" onClick={() => copy(key, text)}>
                           {copied === key ? <IconCheck width={16} height={16} /> : <IconCopy width={16} height={16} />}
                           {copied === key ? tc('copied') : t('copyPlay')}
