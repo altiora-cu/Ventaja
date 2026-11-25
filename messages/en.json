@@ -138,7 +138,7 @@
     "aiDisclaimer": "The AI audits the main pick and every recommended play using form, absences and odds. It can only lower the seal, never raise it. It is not a prediction.",
     "smallSample": "Small sample: one of the teams has fewer than 5 matches with data. Probability is blended with market odds until the sample fills in.",
     "bestTitle": "Best plays for this match",
-    "bestHint": "Only plays with an edge over the odds, a probability of 60% or more and an available price. One per market, most likely first.",
+    "bestHint": "Plays with an edge over the odds (5% or more), probability of 55% or more and odds available. One per market, most likely first.",
     "bestStarted": "The match has already started. These were the recommended plays before kickoff.",
     "riskBajo": "Low risk",
     "riskMedio": "Medium risk",

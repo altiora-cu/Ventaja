@@ -106,3 +106,19 @@ describe('probablePlays', () => {
     expect(probablePlays([c(1, '1x2', 'home', 0.5, 2)])).toEqual([]);
   });
 });
+
+describe('coherencia entre Mejores jugadas y Picks', () => {
+  const c = (id: number, market: string, selection: string, prob: number, best_price: number | null) => ({ id, market, selection, line: null, player_id: null, prob, best_price, edge: best_price ? prob - 1 / best_price : null, sello: 'media' as const });
+
+  it('una jugada con 57% y ventaja de 15% es mejor jugada, con riesgo alto', () => {
+    const out = bestPlays([c(1, '1x2', 'home', 0.57, 2.38)]);
+    expect(out.map((p) => p.id)).toEqual([1]);
+    expect(riskLevel(0.57)).toBe('alto');
+    expect(riskLevel(0.62)).toBe('medio');
+  });
+
+  it('las más probables solo salen de mercados principales', () => {
+    const out = probablePlays([c(1, 'ht', 'ht_over', 0.84, null), c(2, '2h', '2h_over', 0.84, null), c(3, 'btts', 'no', 0.6, null)]);
+    expect(out.map((p) => p.id)).toEqual([3]);
+  });
+});
