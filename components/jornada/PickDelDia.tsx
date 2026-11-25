@@ -10,11 +10,19 @@ import { fmtTime, odds, pct, signedPct } from '@/lib/utils';
 import type { Locale } from '@/i18n/config';
 import type { LockMode } from './FixtureCard';
 
+/**
+ * Pick del día: el de mayor ventaja con Sello Alta; si no hay, con Sello Media; si tampoco, el de mayor ventaja
+ * positiva con cuota. Sello final: el de la Revisión IA si existe (solo puede bajar). Nunca uno con veredicto "discrepa".
+ */
 export function choosePickOfDay(fixtures: FixtureWithAnalysis[]): FixtureWithAnalysis | null {
-  // Sello final: el de la Revisión IA si existe (solo puede bajar). Excluye picks con veredicto 'discrepa'.
-  const candidates = fixtures.filter((f) => (f.analysis?.ai_review?.sello_final ?? f.analysis?.top_market?.sello) === 'alta' && f.analysis?.ai_review?.verdict !== 'discrepa' && f.status === 'NS');
-  if (!candidates.length) return null;
-  return candidates.sort((a, b) => (b.analysis!.top_market!.edge ?? 0) - (a.analysis!.top_market!.edge ?? 0))[0];
+  const selloOf = (f: FixtureWithAnalysis) => f.analysis?.ai_review?.sello_final ?? f.analysis?.top_market?.sello;
+  const open = fixtures.filter((f) => f.status === 'NS' && f.analysis?.top_market && f.analysis.ai_review?.verdict !== 'discrepa');
+  const byEdge = (list: FixtureWithAnalysis[]) => [...list].sort((a, b) => (b.analysis!.top_market!.edge ?? 0) - (a.analysis!.top_market!.edge ?? 0))[0] ?? null;
+  return (
+    byEdge(open.filter((f) => selloOf(f) === 'alta')) ??
+    byEdge(open.filter((f) => selloOf(f) === 'media')) ??
+    byEdge(open.filter((f) => f.analysis!.top_market!.best_price && (f.analysis!.top_market!.edge ?? 0) > 0 && f.analysis!.top_market!.prob >= 0.55))
+  );
 }
 
 /** Tarjeta destacada con borde --ventaja: el único acento verde fuerte de la pantalla. */
@@ -22,14 +30,8 @@ export async function PickDelDia({ fixture: f, lock, timeZone }: { fixture: Fixt
   const t = await getTranslations('jornada');
   const tc = await getTranslations('common');
   const locale = (await getLocale()) as Locale;
-  if (!f) {
-    return (
-      <section className="card p-4">
-        <p className="text-xs font-semibold uppercase tracking-[0.06em] text-muted">{t('pickOfDay')}</p>
-        <p className="mt-2 text-muted">{t('noPickOfDay')}</p>
-      </section>
-    );
-  }
+  // Sin candidato no se muestra nada: un cartel de "hoy no hay pick" solo resta confianza.
+  if (!f) return null;
   const top = f.analysis!.top_market!;
   const locked = lock !== 'none';
   const href = locked ? (lock === 'login' ? '/login?next=' + encodeURIComponent(`/partido/${f.id}`) : '/activar') : `/partido/${f.id}`;

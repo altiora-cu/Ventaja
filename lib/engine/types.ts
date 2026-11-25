@@ -59,6 +59,12 @@ export interface TeamInput {
   ht_share?: number | null;
   /** Titulares ausentes confirmados. */
   missing_starters: number;
+  /**
+   * Confianza en las fuerzas del equipo (0–1; 1 por defecto). Con menos de 1, ataque y defensa se acercan al
+   * promedio de la liga: se usa cuando las estadísticas vienen de otra competición (un equipo de Champions medido
+   * con su liga local) o de muy pocos partidos, para no producir probabilidades extremas.
+   */
+  confidence?: number;
 }
 
 export interface PlayerInput {
