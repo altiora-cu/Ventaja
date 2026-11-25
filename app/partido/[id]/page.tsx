@@ -122,6 +122,9 @@ export default async function PartidoPage({ params }: { params: { id: string } }
         {missingMarkets.length > 0 && <p className="mt-2 text-xs text-muted">{t('missingMarkets', { markets: missingMarkets.map((m) => marketName(m, locale)).join(', ') })}</p>}
       </section>
 
+      {/* Dónde paga mejor cada jugada: lo que más mira quien va a apostar. */}
+      <Comparador odds={odds} home={f.home.name} away={f.away.name} />
+
       {/* 2. Por qué: lectura, revisión IA y análisis web, después de las cuotas. */}
       <h2 className="pt-2 text-xs font-semibold uppercase tracking-[0.06em] text-muted">{t('analysisTitle')}</h2>
       <FadeIn>
@@ -138,8 +141,6 @@ export default async function PartidoPage({ params }: { params: { id: string } }
       {analysis?.scores && <Marcador scores={analysis.scores} home={f.home.name} away={f.away.name} />}
 
       <FormaBlock home={f.home} away={f.away} hs={homeStats} as={awayStats} />
-
-      <Comparador odds={odds} home={f.home.name} away={f.away.name} />
 
       <TeamHistory home={f.home} away={f.away} hist={teamHistory} />
     </article>

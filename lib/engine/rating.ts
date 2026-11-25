@@ -49,8 +49,9 @@ export function teamRates(team: TeamInput, atHome: boolean, league: LeagueAverag
   const defenseGoals = recAgainst === null ? seasonAgainst : recWeight * recAgainst * condFactorAgainst + (1 - recWeight) * seasonAgainst;
 
   // Fuerzas relativas a la liga (1 = promedio). Acotadas para evitar extremos con poca muestra.
-  const attack = clamp(attackGoals / leagueFor, 0.35, 2.6);
-  const defense = clamp(defenseGoals / leagueAgainst, 0.35, 2.6);
+  const c = clamp(team.confidence ?? 1, 0, 1);
+  const attack = 1 + (clamp(attackGoals / leagueFor, 0.35, 2.6) - 1) * c;
+  const defense = 1 + (clamp(defenseGoals / leagueAgainst, 0.35, 2.6) - 1) * c;
   return { attack, defense };
 }
 
@@ -96,7 +97,9 @@ export function expectedGoals(home: TeamInput, away: TeamInput, league: LeagueAv
   const h = teamRates(home, true, league);
   const a = teamRates(away, false, league);
   const inj = injuryFactors(home.missing_starters, away.missing_starters);
-  const elo = eloFactor(home.elo, away.elo);
+  // El Elo también es por liga: si alguna fuerza es poco fiable, su empuje se atenúa igual.
+  const eloConf = Math.min(clamp(home.confidence ?? 1, 0, 1), clamp(away.confidence ?? 1, 0, 1));
+  const elo = Math.pow(eloFactor(home.elo, away.elo), eloConf);
 
   const lambdaHome = clamp(h.attack * a.defense * league.home_goals * inj.home * Math.sqrt(elo), 0.2, 4.5);
   const lambdaAway = clamp(a.attack * h.defense * league.away_goals * inj.away / Math.sqrt(elo), 0.2, 4.5);
@@ -114,4 +117,20 @@ export function expectedGoals(home: TeamInput, away: TeamInput, league: LeagueAv
       elo,
     },
   };
+}
+
+/** Estadísticas de otra competición: valen como referencia, no como medida directa. */
+export const CROSS_LEAGUE_CONFIDENCE = 0.55;
+/** Partidos en la misma liga a partir de los cuales las fuerzas del equipo se usan al 100 %. */
+export const FULL_CONFIDENCE_PLAYED = 10;
+
+/**
+ * Confianza (0–1) en las fuerzas de un equipo para un partido. Sin estadísticas: 0 (promedio de la liga).
+ * De otra competición: 0,55. De la misma liga: de 0,4 con 0 partidos a 1 con 10 o más.
+ * Evita probabilidades extremas en copas y arranques de temporada (un 5 % / 8 % / 87 % con cinco partidos).
+ */
+export function teamConfidence(stats: { sameLeague: boolean; played: number } | null): number {
+  if (!stats) return 0;
+  if (!stats.sameLeague) return CROSS_LEAGUE_CONFIDENCE;
+  return clamp(0.4 + (0.6 * stats.played) / FULL_CONFIDENCE_PLAYED, 0.4, 1);
 }

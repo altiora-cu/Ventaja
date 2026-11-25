@@ -333,3 +333,42 @@ describe('arranque en frío', () => {
     expect(half.prob).toBeCloseTo((home.implied_prob! + priced.find((p) => p.market === '1x2' && p.selection === 'home')!.prob) / 2, 9);
   });
 });
+
+import { expectedGoals as egConf } from './rating';
+
+describe('confianza en las fuerzas del equipo', () => {
+  const league = { home_goals: 1.5, away_goals: 1.2, corners: 10, cards: 4, sot: 8 } as Parameters<typeof egConf>[2];
+  const team = (id: number, gf: number, gc: number, confidence?: number) => ({
+    id, name: `T${id}`, elo: 1500,
+    home: { played: 10, gf: gf * 10, gc: gc * 10, xg: null, xga: null },
+    away: { played: 10, gf: gf * 10, gc: gc * 10, xg: null, xga: null },
+    recent: [], corners_for: null, corners_against: null, cards_for: null, cards_against: null, sot_for: null, sot_against: null, missing_starters: 0, confidence,
+  });
+
+  it('con confianza menor las probabilidades son menos extremas', () => {
+    const full = egConf(team(1, 0.9, 1.6), team(2, 3.0, 0.6), league);
+    const soft = egConf(team(1, 0.9, 1.6, 0.55), team(2, 3.0, 0.6, 0.55), league);
+    expect(soft.away).toBeLessThan(full.away);
+    expect(soft.home).toBeGreaterThan(full.home);
+    expect(soft.away / soft.home).toBeLessThan(full.away / full.home);
+  });
+
+  it('con confianza 0 el partido queda en el promedio de la liga', () => {
+    const zero = egConf(team(1, 0.9, 1.6, 0), team(2, 3.0, 0.6, 0), league);
+    expect(zero.home).toBeCloseTo(1.5, 5);
+    expect(zero.away).toBeCloseTo(1.2, 5);
+  });
+});
+
+import { teamConfidence as tc2 } from './rating';
+
+describe('teamConfidence', () => {
+  it('sin estadísticas 0, otra competición 0.55, misma liga crece hasta 1 con 10 partidos', () => {
+    expect(tc2(null)).toBe(0);
+    expect(tc2({ sameLeague: false, played: 30 })).toBe(0.55);
+    expect(tc2({ sameLeague: true, played: 0 })).toBeCloseTo(0.4);
+    expect(tc2({ sameLeague: true, played: 5 })).toBeCloseTo(0.7);
+    expect(tc2({ sameLeague: true, played: 10 })).toBe(1);
+    expect(tc2({ sameLeague: true, played: 30 })).toBe(1);
+  });
+});

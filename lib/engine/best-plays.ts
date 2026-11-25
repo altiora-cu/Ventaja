@@ -78,3 +78,35 @@ export function bestPlays<T extends PlayCandidate>(candidates: readonly T[], max
   }
   return [...byGroup.values()].sort((a, b) => b.prob - a.prob || (b.edge ?? 0) - (a.edge ?? 0)).slice(0, max);
 }
+
+/** Jugadas "más probables": lo que se muestra cuando ninguna tiene ventaja clara sobre la cuota. */
+export const PROBABLE_MIN_PROB = 0.55;
+export const MAX_PROBABLE_PLAYS = 3;
+/** Por debajo de esta cuota la jugada es tan obvia que no aporta ("Menos de 4.5 goles" a 1.08). */
+const PROBABLE_MIN_PRICE = 1.2;
+/** Sin cuota no se puede medir lo obvia que es: se descartan las casi seguras por probabilidad. */
+const PROBABLE_MAX_PROB_NO_PRICE = 0.85;
+
+function isProbablePlay(c: PlayCandidate): boolean {
+  if (EXCLUDED_MARKETS.has(c.market) || c.player_id !== null) return false;
+  if (c.prob < PROBABLE_MIN_PROB) return false;
+  if (c.best_price) return c.best_price >= PROBABLE_MIN_PRICE;
+  return c.prob <= PROBABLE_MAX_PROB_NO_PRICE;
+}
+
+/**
+ * Las jugadas más probables del partido según el modelo, una por mercado, tengan o no ventaja sobre la cuota.
+ * No son "de valor": se muestran como orientación cuando `bestPlays` no devuelve ninguna. Primero las que
+ * tienen cuota (se pueden comparar), después por probabilidad. Función pura.
+ */
+export function probablePlays<T extends PlayCandidate>(candidates: readonly T[], max = MAX_PROBABLE_PLAYS, rejected: ReadonlySet<number> = new Set()): T[] {
+  const byGroup = new Map<string, T>();
+  for (const c of candidates) {
+    if (!isProbablePlay(c) || rejected.has(c.id)) continue;
+    const key = groupKey(c);
+    const current = byGroup.get(key);
+    const better = !current || Number(Boolean(c.best_price)) > Number(Boolean(current.best_price)) || (Boolean(c.best_price) === Boolean(current.best_price) && c.prob > current.prob);
+    if (better) byGroup.set(key, c);
+  }
+  return [...byGroup.values()].sort((a, b) => Number(Boolean(b.best_price)) - Number(Boolean(a.best_price)) || b.prob - a.prob).slice(0, max);
+}

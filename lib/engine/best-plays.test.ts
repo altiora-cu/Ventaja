@@ -80,3 +80,29 @@ describe('rejectedByAi', () => {
     expect(rejectedByAi([cand({})], null).size).toBe(0);
   });
 });
+
+import { probablePlays } from './best-plays';
+
+describe('probablePlays', () => {
+  const c = (id: number, market: string, selection: string, prob: number, best_price: number | null, line: number | null = null) => ({ id, market, selection, line, player_id: null, prob, best_price, edge: best_price ? prob - 1 / best_price : null, sello: 'baja' as const });
+
+  it('devuelve las más probables, una por mercado, aunque no tengan ventaja', () => {
+    const out = probablePlays([c(1, '1x2', 'home', 0.58, 1.6), c(2, '1x2', 'draw', 0.22, 4), c(3, 'totals', 'under', 0.66, 1.45, 2.5), c(4, 'totals', 'over', 0.34, 2.6, 2.5), c(5, 'btts', 'no', 0.61, 1.7)]);
+    expect(out.map((p) => p.id)).toEqual([3, 5, 1]);
+  });
+
+  it('descarta jugadas obvias: cuota mínima con precio, tope de probabilidad sin precio', () => {
+    const out = probablePlays([c(1, 'totals', 'under', 0.95, 1.05, 4.5), c(2, 'dc', '1X', 0.9, null), c(3, 'btts', 'no', 0.62, null)]);
+    expect(out.map((p) => p.id)).toEqual([3]);
+  });
+
+  it('prefiere las que tienen cuota y respeta el tope y los rechazos de la IA', () => {
+    const list = [c(1, '1x2', 'home', 0.7, null), c(2, 'totals', 'under', 0.6, 1.6, 2.5), c(3, 'btts', 'no', 0.65, 1.5), c(4, 'dc', '1X', 0.8, 1.25)];
+    expect(probablePlays(list).map((p) => p.id)).toEqual([4, 3, 2]);
+    expect(probablePlays(list, 3, new Set([4])).map((p) => p.id)).toEqual([3, 2, 1]);
+  });
+
+  it('nada por debajo del 55%', () => {
+    expect(probablePlays([c(1, '1x2', 'home', 0.5, 2)])).toEqual([]);
+  });
+});

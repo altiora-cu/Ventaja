@@ -10,7 +10,7 @@ import type { EngineResult, FixtureInput, OddsQuote, PricedOutcome } from './typ
 export * from './types';
 export { sello, qualifiesAsPick, priceOutcomes, shrinkToMarket, MIN_PLAYED_FULL_MODEL } from './edge';
 export { buildCombos, COMBO_RULES } from './combos';
-export { expectedGoals } from './rating';
+export { expectedGoals, teamConfidence } from './rating';
 export { scoreMatrix, topScores } from './dixon-coles';
 
 /** Ejecuta el modelo completo para un partido. Función pura (sin IO). */

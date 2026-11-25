@@ -2,7 +2,7 @@ import 'server-only';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { createAdminClient } from '@/lib/supabase/admin';
 import type { Fixture, FixtureAnalysis, Injury, League, Odd, PlayerStats, Team, TeamStats, TopMarket } from '@/lib/db/types';
-import { predictFixture, qualifiesAsPick, shrinkToMarket, topPick, MIN_PLAYED_FULL_MODEL, type FixtureInput, type MarketKey, type OddsQuote, type PlayerInput, type TeamInput } from '@/lib/engine';
+import { predictFixture, qualifiesAsPick, shrinkToMarket, teamConfidence, topPick, MIN_PLAYED_FULL_MODEL, type FixtureInput, type MarketKey, type OddsQuote, type PlayerInput, type TeamInput } from '@/lib/engine';
 import { generarLectura } from '@/lib/engine/lectura';
 import { selectionKey } from '@/lib/engine/edge';
 import { MAX_PLAYS_REVIEWED, playsKey, type PlayFacts } from '@/lib/engine/plays-review';
@@ -36,7 +36,7 @@ const DAY_MS = 24 * 3600_000;
 
 type FixtureRow = Fixture & { home: Team; away: Team; league: League };
 
-function toTeamInput(team: Team, ts: TeamStats | undefined, missing: number): TeamInput {
+function toTeamInput(team: Team, ts: TeamStats | undefined, missing: number, confidence = 1): TeamInput {
   const split = (s: TeamStats['home']) => ({ played: s?.played ?? 0, gf: s?.gf ?? 0, gc: s?.gc ?? 0, xg: s?.xg ?? null, xga: s?.xga ?? null });
   const halves = ts?.halves;
   const htShare = halves && halves.ht_gf + halves.sh_gf > 0 ? halves.ht_gf / (halves.ht_gf + halves.sh_gf) : null;
@@ -55,6 +55,7 @@ function toTeamInput(team: Team, ts: TeamStats | undefined, missing: number): Te
     sot_against: ts?.sot_against ?? null,
     ht_share: htShare,
     missing_starters: missing,
+    confidence,
   };
 }
 
@@ -114,8 +115,8 @@ export async function runPredictions(dateKey?: string): Promise<PredictReport> {
 
       const input: FixtureInput = {
         fixture_id: f.id,
-        home: toTeamInput(f.home, tsHome, fInj.filter((i) => i.team_id === f.home_id).length),
-        away: toTeamInput(f.away, tsAway, fInj.filter((i) => i.team_id === f.away_id).length),
+        home: toTeamInput(f.home, tsHome, fInj.filter((i) => i.team_id === f.home_id).length, teamConfidence(tsHome ? { sameLeague: tsHome.league_id === f.league_id, played: tsHome.played } : null)),
+        away: toTeamInput(f.away, tsAway, fInj.filter((i) => i.team_id === f.away_id).length, teamConfidence(tsAway ? { sameLeague: tsAway.league_id === f.league_id, played: tsAway.played } : null)),
         league: leagueAvgs.get(f.league_id) ?? LEAGUE_DEFAULTS,
         referee_cards_avg: f.referee ? refMap.get(f.referee.split(',')[0].trim()) ?? null : null,
         players: (players ?? [])
@@ -140,7 +141,9 @@ export async function runPredictions(dateKey?: string): Promise<PredictReport> {
         .map((o) => ({ bookmaker: o.bookmaker, market: o.market as MarketKey, selection: o.selection, line: o.line, price: Number(o.price) }));
 
       const raw = predictFixture(input, quotes);
-      const minPlayed = Math.min(tsHome?.played ?? 0, tsAway?.played ?? 0);
+      // Partidos en ESTA liga: los de otra competición no cuentan como muestra propia.
+      const playedIn = (ts: TeamStats | undefined) => (ts && ts.league_id === f.league_id ? ts.played : 0);
+      const minPlayed = Math.min(playedIn(tsHome), playedIn(tsAway));
       const result = { ...raw, priced: shrinkToMarket(raw.priced, minPlayed) };
       const pick = topPick(result.priced);
       const smallSample = minPlayed < MIN_PLAYED_FULL_MODEL;
