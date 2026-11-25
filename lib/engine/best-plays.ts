@@ -1,8 +1,13 @@
 import type { AiPlayReview, Prediction, Sello } from '@/lib/db/types';
 import { qualifiesAsPick, selectionKey } from './edge';
 
-/** Por debajo de esta probabilidad una jugada se considera arriesgada y no entra en "Mejores jugadas". */
-export const SAFE_MIN_PROB = 0.6;
+/**
+ * Probabilidad mínima para entrar en "Mejores jugadas". Es la misma de Picks y del Sello Media (55 %): una jugada
+ * que aparece en Picks también aparece como mejor jugada en su partido. Entre 55 % y 60 % se marca como riesgo alto.
+ */
+export const SAFE_MIN_PROB = 0.55;
+/** Por debajo de esta probabilidad el riesgo se muestra como alto. */
+export const MEDIUM_RISK_PROB = 0.6;
 /** A partir de esta probabilidad el riesgo se muestra como bajo. */
 export const LOW_RISK_PROB = 0.7;
 export const MAX_BEST_PLAYS = 5;
@@ -41,7 +46,7 @@ export function toPlayCandidate(p: Prediction): PlayCandidate & { player_name: s
 
 export function riskLevel(prob: number): RiskLevel {
   if (prob >= LOW_RISK_PROB) return 'bajo';
-  if (prob >= SAFE_MIN_PROB) return 'medio';
+  if (prob >= MEDIUM_RISK_PROB) return 'medio';
   return 'alto';
 }
 
@@ -87,8 +92,11 @@ const PROBABLE_MIN_PRICE = 1.2;
 /** Sin cuota no se puede medir lo obvia que es: se descartan las casi seguras por probabilidad. */
 const PROBABLE_MAX_PROB_NO_PRICE = 0.85;
 
+/** Mercados que un apostador espera ver primero. Mitades, marcador exacto y jugadores quedan en la lista de mercados. */
+const PROBABLE_MARKETS = new Set(['1x2', 'dc', 'totals', 'btts', 'team_totals', 'ah']);
+
 function isProbablePlay(c: PlayCandidate): boolean {
-  if (EXCLUDED_MARKETS.has(c.market) || c.player_id !== null) return false;
+  if (!PROBABLE_MARKETS.has(c.market) || c.player_id !== null) return false;
   if (c.prob < PROBABLE_MIN_PROB) return false;
   if (c.best_price) return c.best_price >= PROBABLE_MIN_PRICE;
   return c.prob <= PROBABLE_MAX_PROB_NO_PRICE;
