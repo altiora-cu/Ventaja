@@ -3,9 +3,11 @@ import { DateChips, type DateChip } from '@/components/jornada/DateChips';
 import { LeagueChips } from '@/components/jornada/LeagueChips';
 import { FixtureCard, type LockMode } from '@/components/jornada/FixtureCard';
 import { choosePickOfDay, PickDelDia } from '@/components/jornada/PickDelDia';
+import { CombosDelDia } from '@/components/jornada/CombosDelDia';
 import { StaggerList } from '@/components/ui/Motion';
 import { getViewer } from '@/lib/auth/viewer';
-import { getFixturesForDate, getLeagues } from '@/lib/data/queries';
+import { getDayComboPool, getFixturesForDate, getLeagues } from '@/lib/data/queries';
+import { DEFAULT_STAKE } from '@/lib/engine/money';
 import { getTimeZone } from '@/lib/tz';
 import { addDays, fmtDateShort, isDateKey, toDateKey } from '@/lib/utils';
 import type { Locale } from '@/i18n/config';
@@ -19,8 +21,10 @@ export default async function JornadaPage({ searchParams }: { searchParams: { fe
   const date = searchParams.fecha && isDateKey(searchParams.fecha) ? searchParams.fecha : today;
   const leagueId = searchParams.liga ? Number(searchParams.liga) || undefined : undefined;
 
-  const fixtures = await getFixturesForDate(date, leagueId, timeZone);
   const lock: LockMode = viewer.access.canAccess ? 'none' : viewer.user ? 'activar' : 'login';
+  // Las combinadas de portada salen de todos los partidos del día, sin filtro de liga; solo de hoy en adelante.
+  const showCombos = date >= today && !leagueId;
+  const [fixtures, comboPool] = await Promise.all([getFixturesForDate(date, leagueId, timeZone), showCombos && lock === 'none' ? getDayComboPool(date, timeZone) : Promise.resolve([])]);
 
   const base = new Date(`${today}T12:00:00Z`);
   const chips: DateChip[] = Array.from({ length: 15 }, (_, i) => i - 7).map((offset) => {
@@ -42,6 +46,10 @@ export default async function JornadaPage({ searchParams }: { searchParams: { fe
         <DateChips chips={chips} active={date} league={searchParams.liga} locale={locale} />
         <LeagueChips leagues={leagues} active={leagueId} date={date !== today ? date : undefined} />
       </div>
+
+      {showCombos && (lock !== 'none' ? fixtures.length > 0 : true) && (
+        <CombosDelDia pool={comboPool} lock={lock} timeZone={timeZone} currency={viewer.profile?.currency ?? 'USD'} stake={Number(viewer.profile?.default_stake) || DEFAULT_STAKE} />
+      )}
 
       {date === today && <PickDelDia fixture={pick} lock={lock} timeZone={timeZone} />}
 

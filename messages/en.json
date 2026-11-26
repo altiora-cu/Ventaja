@@ -94,7 +94,19 @@
     "aiCaution": "AI: caution",
     "aiDisagree": "AI: disagrees",
     "smallSample": "Small sample",
-    "aiWebTag": "AI web"
+    "aiWebTag": "AI web",
+    "combosTitle": "Parlays of the day",
+    "comboProbable": "Most likely",
+    "comboProbableHint": "{count} plays from different matches, the ones the model rates most likely today.",
+    "comboDream": "The dreamer",
+    "comboDreamHint": "{count} plays from {count} matches chasing the biggest payout.",
+    "comboDreamRisk": "Very high risk: per the model it lands about 1 in {times} times. Only stake what you can lose.",
+    "comboPayout": "{stake} returns",
+    "comboMixed": "Includes tomorrow's matches: not enough with odds today.",
+    "comboSave": "Save parlay",
+    "comboSaved": "Saved to My plays",
+    "combosLockedLogin": "Create your free account to see today's most likely parlay and the dreamer.",
+    "combosLocked": "Activate your access to see today's most likely parlay and the dreamer."
   },
   "partido": {
     "title": "Match sheet",

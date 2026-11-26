@@ -168,6 +168,35 @@ export const getPickCandidates = cache(async (dateKey: string, timeZone = DEFAUL
     .map((p) => ({ ...p, fixture: fMap.get(p.fixture_id)!, ai: reviews.get(p.fixture_id)?.get(selectionKey(p.market, p.selection, p.line === null ? null : Number(p.line), p.player_id)) ?? null }));
 });
 
+export interface DayComboLeg extends Prediction {
+  fixture: FixtureFull;
+  /** El partido es del día pedido (false: del día siguiente, para completar la soñadora). */
+  sameDay: boolean;
+}
+
+/**
+ * Jugadas con cuota de los partidos aún sin empezar del día (y del siguiente, para poder llegar a 6 partidos en
+ * "la soñadora"). Excluye las que la Revisión IA contradice. Con RLS, un visitante sin acceso recibe lista vacía.
+ */
+export const getDayComboPool = cache(async (dateKey: string, timeZone = DEFAULT_TZ): Promise<DayComboLeg[]> => {
+  if (!hasSupabaseEnv()) return [];
+  const { from, to } = dayRange(dateKey, timeZone);
+  const { to: toNext } = dayRange(nextDayKey(dateKey), timeZone);
+  const start = new Date(Math.max(new Date(from).getTime(), Date.now())).toISOString();
+  const { data: fixtures } = await db().from('fixtures').select(FIXTURE_SELECT).gte('kickoff', start).lt('kickoff', toNext).in('status', ['NS', 'TBD']).order('kickoff').returns<FixtureFull[]>();
+  if (!fixtures?.length) return [];
+  const ids = fixtures.map((f) => f.id);
+  const fMap = new Map(fixtures.map((f) => [f.id, f]));
+  const [{ data: preds }, { data: analyses }] = await Promise.all([
+    db().from('predictions').select('*').in('fixture_id', ids).not('best_price', 'is', null).gte('prob', 0.4).in('market', ['1x2', 'dc', 'totals', 'btts', 'team_totals', 'ah']).limit(3000).returns<Prediction[]>(),
+    db().from('fixture_analysis').select('fixture_id,ai_review').in('fixture_id', ids).returns<Array<Pick<FixtureAnalysis, 'fixture_id' | 'ai_review'>>>(),
+  ]);
+  const reviews = new Map((analyses ?? []).map((a) => [a.fixture_id, verdictsByKey(a.ai_review?.plays)]));
+  return (preds ?? [])
+    .filter((p) => reviews.get(p.fixture_id)?.get(selectionKey(p.market, p.selection, p.line === null ? null : Number(p.line), p.player_id))?.verdict !== 'discrepa')
+    .map((p) => ({ ...p, fixture: fMap.get(p.fixture_id)!, sameDay: fMap.get(p.fixture_id)!.kickoff < to }));
+});
+
 export interface SearchResult extends FixtureFull {
   analysis: FixtureAnalysis | null;
   pick: PickHistory | null;

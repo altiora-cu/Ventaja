@@ -8,6 +8,7 @@ import { registerSystemCombos, settleUserPlays } from '@/lib/data/settle-user';
 import { runAccounts } from '@/lib/data/accounts';
 import { runPushNotifications } from '@/lib/push/notify';
 import { runWebScores } from '@/lib/data/web-scores';
+import { ingestFdco } from '@/lib/data/fdco-ingest';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -36,6 +37,8 @@ export async function GET(request: NextRequest) {
     await step('webScores', () => runWebScores());
     await step('settle', settlePicks);
     await step('settleUser', settleUserPlays);
+    // Estadísticas y cuotas gratis de las ligas europeas, antes de recalcular team_stats y predicciones.
+    await step('fdco', () => ingestFdco());
     await step('stats', ingestStats);
     await step('odds', ingestOdds);
     await step('lineups', ingestLineups);

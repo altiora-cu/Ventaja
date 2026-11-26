@@ -94,7 +94,19 @@
     "aiCaution": "IA: cautela",
     "aiDisagree": "IA: discrepa",
     "smallSample": "Muestra pequeña",
-    "aiWebTag": "IA web"
+    "aiWebTag": "IA web",
+    "combosTitle": "Combinadas del día",
+    "comboProbable": "La más probable",
+    "comboProbableHint": "{count} jugadas de partidos distintos, las que el modelo ve más probables hoy.",
+    "comboDream": "La soñadora",
+    "comboDreamHint": "{count} jugadas de {count} partidos buscando el pago más alto.",
+    "comboDreamRisk": "Riesgo muy alto: según el modelo sale cerca de 1 de cada {times} veces. Juega solo lo que puedas perder.",
+    "comboPayout": "Con {stake} cobras",
+    "comboMixed": "Incluye partidos de mañana: hoy no hay suficientes con cuota.",
+    "comboSave": "Guardar combinada",
+    "comboSaved": "Guardada en Mis jugadas",
+    "combosLockedLogin": "Crea tu cuenta gratis y mira la combinada más probable y la soñadora de hoy.",
+    "combosLocked": "Activa tu acceso para ver la combinada más probable y la soñadora de hoy."
   },
   "partido": {
     "title": "Ficha de partido",
