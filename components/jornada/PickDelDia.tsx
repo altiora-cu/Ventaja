@@ -57,18 +57,18 @@ export async function PickDelDia({ fixture: f, lock, timeZone }: { fixture: Fixt
               <p className={`mt-1 text-sm text-muted ${locked ? 'locked' : ''}`}>{selectionLabel(top.market, top.selection, top.line, { home: f.home.name, away: f.away.name, player: top.player_name }, locale)}</p>
             </div>
           </div>
-          <div className={`flex items-center gap-6 ${locked ? 'locked' : ''}`}>
+          <div className={`flex flex-wrap items-center gap-x-6 gap-y-3 ${locked ? 'locked' : ''}`}>
             <div>
               <p className="text-xs text-faint">{tc('probability')}</p>
-              <p className="num text-2xl">{pct(top.prob)}</p>
+              <p className="num text-xl sm:text-2xl">{pct(top.prob)}</p>
             </div>
             <div>
               <p className="text-xs text-faint">{tc('bestOdds')}</p>
-              <p className="num text-2xl">{odds(top.best_price)}</p>
+              <p className="num text-xl sm:text-2xl">{odds(top.best_price)}</p>
             </div>
             <div>
               <p className="text-xs text-faint">{tc('edge')}</p>
-              <p className="num text-2xl text-ventaja">{signedPct(top.edge)}</p>
+              <p className="num text-xl text-ventaja sm:text-2xl">{signedPct(top.edge)}</p>
             </div>
             <Sello nivel={f.analysis?.ai_review?.sello_final ?? top.sello} animate={false} />
           </div>
