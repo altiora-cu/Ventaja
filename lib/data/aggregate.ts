@@ -22,6 +22,17 @@ function avg(values: Array<number | null>): number | null {
   return xs.reduce((a, b) => a + b, 0) / xs.length;
 }
 
+/**
+ * Suma de xG llevada al total de partidos: si a alguno le falta el dato (los archivos llegan con unos días de
+ * retraso), se le asigna el promedio de los demás. Sin esto, xG ÷ jugados quedaría por debajo del real.
+ */
+function scaledSum(values: Array<number | null>): number | null {
+  const known = values.filter((v): v is number => v !== null && !Number.isNaN(v));
+  if (!known.length) return null;
+  const sum = known.reduce((a, b) => a + b, 0);
+  return Math.round((sum * values.length) / known.length * 100) / 100;
+}
+
 export function computeTeamStats(fixtures: Fixture[], teamId: number, leagueId: number, season: number, elo = 1500): TeamStats {
   const played = finished(fixtures)
     .filter((f) => f.league_id === leagueId && f.season === season && (f.home_id === teamId || f.away_id === teamId))
@@ -61,8 +72,8 @@ export function computeTeamStats(fixtures: Fixture[], teamId: number, leagueId: 
       played: rs.length,
       gf: rs.reduce((s, r) => s + r.gf, 0),
       gc: rs.reduce((s, r) => s + r.gc, 0),
-      xg: xgs.every((x) => x === null) ? null : xgs.reduce<number>((acc, x) => acc + (x ?? 0), 0),
-      xga: xgas.every((x) => x === null) ? null : xgas.reduce<number>((acc, x) => acc + (x ?? 0), 0),
+      xg: scaledSum(xgs),
+      xga: scaledSum(xgas),
       wins: rs.filter((r) => r.result === 'W').length,
       draws: rs.filter((r) => r.result === 'D').length,
       losses: rs.filter((r) => r.result === 'L').length,
@@ -104,8 +115,8 @@ export function computeTeamStats(fixtures: Fixture[], teamId: number, leagueId: 
     losses: rows.filter((r) => r.result === 'L').length,
     gf: rows.reduce((s, r) => s + r.gf, 0),
     gc: rows.reduce((s, r) => s + r.gc, 0),
-    xg: xgAll.every((x) => x === null) ? null : xgAll.reduce<number>((acc, x) => acc + (x ?? 0), 0),
-    xga: xgaAll.every((x) => x === null) ? null : xgaAll.reduce<number>((acc, x) => acc + (x ?? 0), 0),
+    xg: scaledSum(xgAll),
+    xga: scaledSum(xgaAll),
     corners_for: avg(rows.map((r) => r.cornersFor)),
     corners_against: avg(rows.map((r) => r.cornersAgainst)),
     cards_for: avg(rows.map((r) => r.cardsFor)),
